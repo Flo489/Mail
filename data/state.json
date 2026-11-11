@@ -2,7 +2,7 @@
   "status": "ACTIVE",
   "appointment_booked": false,
   "appointment_details": null,
-  "scheduled_start_at": null,
+  "scheduled_start_at": "2026-11-12T08:00:00+01:00",
   "last_email_sent_at": null,
   "last_email_received_at": null,
   "last_sent_message_id": null,
