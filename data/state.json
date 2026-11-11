@@ -1,0 +1,12 @@
+{
+  "status": "ACTIVE",
+  "appointment_booked": false,
+  "appointment_details": null,
+  "scheduled_start_at": null,
+  "last_email_sent_at": null,
+  "last_email_received_at": null,
+  "last_sent_message_id": null,
+  "last_seen_imap_uid": null,
+  "reminder_count": 0,
+  "conversation_history": []
+}

@@ -1,0 +1,64 @@
+name: Rappel Dermatologue Maman
+
+on:
+  schedule:
+    # Exécution toutes les heures entre 07h et 21h (heure de Paris, UTC 6h à 20h)
+    - cron: '0 6,7,8,9,10,11,12,13,14,15,16,17,18,19,20 * * *'
+  workflow_dispatch:
+    inputs:
+      force_start_now:
+        description: 'Envoyer le premier email immédiatement (sans attendre demain 8h)'
+        required: false
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Mode simulation (ne pas envoyer de vrais emails)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-remind:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Configurer Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Installer les dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Exécuter le script de rappel
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          MOTHER_EMAIL: ${{ secrets.MOTHER_EMAIL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          USER_NAME: ${{ vars.USER_NAME || 'Florent' }}
+          FORCE_START_NOW: ${{ inputs.force_start_now }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          python main.py
+
+      - name: Sauvegarder l'état mis à jour
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain data/state.json)" ]; then
+            git add data/state.json
+            git commit -m "chore(bot): mise à jour de l'état [skip ci]"
+            git push
+          else
+            echo "Aucune modification d'état à sauvegarder."
+          fi
