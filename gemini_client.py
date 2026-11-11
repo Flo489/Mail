@@ -7,7 +7,12 @@ from config import Config
 class GeminiClient:
     def __init__(self, api_key=None):
         self.api_key = api_key or Config.GEMINI_API_KEY
-        self.models = ["gemini-2.5-flash", "gemini-1.5-flash"]
+        self.models = [
+            "gemini-flash-lite-latest",
+            "gemini-flash-latest",
+            "gemini-2.5-flash-lite",
+            "gemini-2.5-flash"
+        ]
 
     def _call_gemini(self, prompt, system_instruction=None, json_mode=False):
         if not self.api_key:
