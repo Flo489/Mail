@@ -1,0 +1,50 @@
+name: Test Envoi Immediat
+
+on:
+  push:
+    paths:
+      - 'trigger_test.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test-send:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run test send
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          MOTHER_EMAIL: ${{ secrets.MOTHER_EMAIL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          USER_NAME: ${{ vars.USER_NAME || 'Florent' }}
+          FORCE_START_NOW: 'true'
+          IS_TEST: 'true'
+          DRY_RUN: 'false'
+        run: |
+          python main.py
+
+      - name: Save state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain data/state.json)" ]; then
+            git add data/state.json
+            git commit -m "chore(test): mise a jour etat apres envoi test [skip ci]"
+            git push
+          fi
