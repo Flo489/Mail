@@ -2,11 +2,18 @@
   "status": "ACTIVE",
   "appointment_booked": false,
   "appointment_details": null,
-  "scheduled_start_at": null,
-  "last_email_sent_at": null,
+  "scheduled_start_at": "2026-11-11T22:04:25.189362+01:00",
+  "last_email_sent_at": "2026-11-11T22:04:26.984040+01:00",
   "last_email_received_at": null,
-  "last_sent_message_id": null,
+  "last_sent_message_id": "<179443106518.2496.18016477866684705862@gmail.com>",
   "last_seen_imap_uid": null,
   "reminder_count": 0,
-  "conversation_history": []
+  "conversation_history": [
+    {
+      "role": "user",
+      "timestamp": "2026-11-11T22:04:26.984040+01:00",
+      "subject": "[TEST] Rendez-vous dermatologue pour Florent",
+      "content": "Coucou Maman,\n\nCeci est un petit message de TEST automatique de Florent pour le rendez-vous chez le dermatologue :)\n\nPeux-tu répondre à ce mail pour tester le système ? Tu peux me dire par exemple si tu as pris le RDV, ou me poser une question sur mes disponibilités.\n\nLe robot va analyser ta réponse et t'envoyer automatiquement une réponse adaptée en retour !\n\nGros bisous,\nFlorent"
+    }
+  ]
 }
