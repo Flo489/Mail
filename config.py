@@ -33,6 +33,7 @@ class Config:
     STATE_FILE = os.getenv("STATE_FILE", "data/state.json")
     
     DRY_RUN = os.getenv("DRY_RUN", "false").lower() in ("true", "1", "yes")
+    IS_TEST = os.getenv("IS_TEST", "false").lower() in ("true", "1", "yes")
 
     @classmethod
     def validate(cls, check_gemini=True, check_email=True):

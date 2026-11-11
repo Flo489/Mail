@@ -11,6 +11,11 @@ on:
         required: false
         type: boolean
         default: false
+      is_test:
+        description: 'Envoyer en mode test (précise à Maman que c est un test)'
+        required: false
+        type: boolean
+        default: false
       dry_run:
         description: 'Mode simulation (ne pas envoyer de vrais emails)'
         required: false
@@ -47,6 +52,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           USER_NAME: ${{ vars.USER_NAME || 'Florent' }}
           FORCE_START_NOW: ${{ inputs.force_start_now }}
+          IS_TEST: ${{ inputs.is_test }}
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           python main.py

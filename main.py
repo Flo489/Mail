@@ -13,6 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Automatisation d'emails pour rendez-vous dermatologue")
     parser.add_argument("--dry-run", action="store_true", help="Exécute sans envoyer d'emails réels")
     parser.add_argument("--immediate", action="store_true", help="Envoie le 1er email immédiatement sans attendre demain 8h")
+    parser.add_argument("--test", action="store_true", help="Envoie un message de test explicite")
     parser.add_argument("--status", action="store_true", help="Affiche le statut actuel et quitte")
     parser.add_argument("--reset", action="store_true", help="Réinitialise l'état local")
     return parser.parse_args()
@@ -81,10 +82,12 @@ def main():
     gemini = GeminiClient()
     email_svc = EmailService()
 
+    is_test_mode = args.test or Config.IS_TEST
+
     # Initialisation de la date de démarrage si pas encore définie
     scheduled_start_iso = state_mgr.state.get("scheduled_start_at")
-    if not scheduled_start_iso:
-        if args.immediate or os.getenv("FORCE_START_NOW", "false").lower() in ("true", "1"):
+    if not scheduled_start_iso or is_test_mode or args.immediate or os.getenv("FORCE_START_NOW", "false").lower() in ("true", "1"):
+        if args.immediate or is_test_mode or os.getenv("FORCE_START_NOW", "false").lower() in ("true", "1"):
             scheduled_start_dt = now
         else:
             # Demain matin à 8h heure locale
@@ -171,19 +174,20 @@ def main():
     # 4. Si aucune nouvelle réponse de Maman :
     # A) Premier email pas encore envoyé
     if not state_mgr.state.get("last_email_sent_at"):
-        if now < scheduled_start_dt and not (args.immediate or os.getenv("FORCE_START_NOW", "false").lower() in ("true", "1")):
+        if now < scheduled_start_dt and not (args.immediate or is_test_mode or os.getenv("FORCE_START_NOW", "false").lower() in ("true", "1")):
             print(f"⏳ Le premier email est programmé pour le {scheduled_start_dt.strftime('%d/%m/%Y à %H:%M')}. Heure actuelle : {now.strftime('%H:%M')}. En attente.")
             return 0
 
-        print("🚀 Envoi du premier email à Maman...")
-        initial_text = gemini.generate_initial_email()
+        email_subject = f"[TEST] {Config.EMAIL_SUBJECT}" if is_test_mode else Config.EMAIL_SUBJECT
+        print(f"🚀 Envoi du premier email à Maman{' (MODE TEST)' if is_test_mode else ''}...")
+        initial_text = gemini.generate_initial_email(is_test=is_test_mode)
         msg_id = email_svc.send_email(
             to_addr=Config.MOTHER_EMAIL,
-            subject=Config.EMAIL_SUBJECT,
+            subject=email_subject,
             body_text=initial_text
         )
         state_mgr.record_sent_email(
-            subject=Config.EMAIL_SUBJECT,
+            subject=email_subject,
             content=initial_text,
             message_id=msg_id
         )

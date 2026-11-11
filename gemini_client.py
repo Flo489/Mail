@@ -158,8 +158,18 @@ Réponds uniquement avec le texte du message (pas de JSON, pas de balises markdo
             print(f"[GeminiClient] Erreur génération relance Gemini: {e}. Utilisation du fallback.")
             return self._fallback_reminder(reminder_count)
 
-    def generate_initial_email(self):
+    def generate_initial_email(self, is_test=False):
         """Generates the very first email sent to mom."""
+        if is_test:
+            return (
+                f"Coucou Maman,\n\n"
+                f"Ceci est un petit message de TEST automatique de Florent pour le rendez-vous chez le dermatologue :)\n\n"
+                f"Peux-tu répondre à ce mail pour tester le système ? Tu peux me dire par exemple si tu as pris le RDV, ou me poser une question sur mes disponibilités.\n\n"
+                f"Le robot va analyser ta réponse et t'envoyer automatiquement une réponse adaptée en retour !\n\n"
+                f"Gros bisous,\n"
+                f"{Config.USER_NAME}"
+            )
+
         if not self.api_key:
             return (
                 f"Coucou Maman,\n\n"
