@@ -2,29 +2,11 @@
   "status": "ACTIVE",
   "appointment_booked": false,
   "appointment_details": null,
-  "scheduled_start_at": "2026-11-11T22:04:25.189362+01:00",
-  "last_email_sent_at": "2026-11-11T22:35:01.556407+01:00",
-  "last_email_received_at": "2026-11-11T22:11:48+01:00",
-  "last_sent_message_id": "<179443289940.2460.614976303256530450@gmail.com>",
-  "last_seen_imap_uid": "25508",
+  "scheduled_start_at": null,
+  "last_email_sent_at": null,
+  "last_email_received_at": null,
+  "last_sent_message_id": null,
+  "last_seen_imap_uid": "25510",
   "reminder_count": 0,
-  "conversation_history": [
-    {
-      "role": "user",
-      "timestamp": "2026-11-11T22:04:26.984040+01:00",
-      "subject": "[TEST] Rendez-vous dermatologue pour Florent",
-      "content": "Coucou Maman,\n\nCeci est un petit message de TEST automatique de Florent pour le rendez-vous chez le dermatologue :)\n\nPeux-tu répondre à ce mail pour tester le système ? Tu peux me dire par exemple si tu as pris le RDV, ou me poser une question sur mes disponibilités.\n\nLe robot va analyser ta réponse et t'envoyer automatiquement une réponse adaptée en retour !\n\nGros bisous,\nFlorent"
-    },
-    {
-      "role": "mother",
-      "timestamp": "2026-11-11T22:11:48+01:00",
-      "content": "Cc mon minou. Oui j'ai appelé le dermatologue et j'attends son appel.\r\n\r\nLe mer. 11 nov. 2026, 22:04, Florent <florentsauvage.contact@gmail.com> a\r\nécrit :"
-    },
-    {
-      "role": "user",
-      "timestamp": "2026-11-11T22:35:01.556407+01:00",
-      "subject": "Re: Rendez-vous dermatologue pour Florent",
-      "content": "Cc maman !\n\nD'accord, super, merci d'avoir appelé ! Tiens-moi au courant dès qu'ils te recontactent pour fixer une date.\n\nGros bisous,\nFlorent"
-    }
-  ]
+  "conversation_history": []
 }
