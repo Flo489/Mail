@@ -2,11 +2,18 @@
   "status": "ACTIVE",
   "appointment_booked": false,
   "appointment_details": null,
-  "scheduled_start_at": null,
-  "last_email_sent_at": null,
+  "scheduled_start_at": "2026-11-12T16:44:21.328646+01:00",
+  "last_email_sent_at": "2026-11-12T16:44:27.999526+01:00",
   "last_email_received_at": null,
-  "last_sent_message_id": null,
+  "last_sent_message_id": "<179449826680.2285.17037782494210062477@gmail.com>",
   "last_seen_imap_uid": "25510",
   "reminder_count": 0,
-  "conversation_history": []
+  "conversation_history": [
+    {
+      "role": "user",
+      "timestamp": "2026-11-12T16:44:27.999526+01:00",
+      "subject": "Rendez-vous dermatologue pour Florent",
+      "content": "Coucou Maman, \n\nJ'espère que tu vas bien. Dis, je me rends compte que je devrais aller faire un petit contrôle chez le dermatologue, mais je suis un peu perdu pour trouver quelqu'un. Est-ce que tu penses que tu pourrais m'en prendre un à l'occasion ? N'importe lequel me conviendra, celui de ton choix ira très bien. \n\nNe pressé pas trop non plus, hein ! \n\nPasse une belle journée, je t'embrasse fort,\n\nFlorent"
+    }
+  ]
 }
