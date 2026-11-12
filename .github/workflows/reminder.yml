@@ -44,25 +44,43 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Exécuter le script de rappel
+      - name: Exécuter le script de rappel pour Maman
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           MOTHER_EMAIL: ${{ secrets.MOTHER_EMAIL }}
+          TARGET_EMAIL: ${{ secrets.MOTHER_EMAIL }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           USER_NAME: ${{ vars.USER_NAME || 'Florent' }}
+          STATE_FILE: 'data/state.json'
           FORCE_START_NOW: ${{ github.event.inputs.force_start_now || 'false' }}
           IS_TEST: ${{ github.event.inputs.is_test || 'false' }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         run: |
           python main.py
 
+      - name: Vérifier également le test pro automatique (si actif)
+        run: |
+          if [ -f "data/test_pro_state.json" ]; then
+            echo "🔍 Vérification automatique du test sauvageflorent.pro..."
+            GMAIL_USER="${{ secrets.GMAIL_USER }}" \
+            GMAIL_APP_PASSWORD="${{ secrets.GMAIL_APP_PASSWORD }}" \
+            TARGET_EMAIL="sauvageflorent.pro@gmail.com" \
+            MOTHER_EMAIL="sauvageflorent.pro@gmail.com" \
+            GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
+            USER_NAME="${{ vars.USER_NAME || 'Florent' }}" \
+            STATE_FILE="data/test_pro_state.json" \
+            IS_TEST="true" \
+            FORCE_START_NOW="false" \
+            python main.py
+          fi
+
       - name: Sauvegarder l'état mis à jour
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ -n "$(git status --porcelain data/state.json)" ]; then
-            git add data/state.json
+          if [ -n "$(git status --porcelain data/)" ]; then
+            git add data/
             git commit -m "chore(bot): mise à jour de l'état [skip ci]"
             git push
           else
