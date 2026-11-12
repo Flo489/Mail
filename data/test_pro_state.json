@@ -1,0 +1,19 @@
+{
+  "status": "ACTIVE",
+  "appointment_booked": false,
+  "appointment_details": null,
+  "scheduled_start_at": "2026-11-12T18:54:15.161091+01:00",
+  "last_email_sent_at": "2026-11-12T18:54:16.725197+01:00",
+  "last_email_received_at": null,
+  "last_sent_message_id": "<179450605574.2503.9458391619459164620@gmail.com>",
+  "last_seen_imap_uid": "25486",
+  "reminder_count": 0,
+  "conversation_history": [
+    {
+      "role": "user",
+      "timestamp": "2026-11-12T18:54:16.725197+01:00",
+      "subject": "[TEST] Rendez-vous dermatologue pour Florent",
+      "content": "Coucou Florent,\n\nCeci est un message de TEST automatique envoyé à sauvageflorent.pro@gmail.com pour tester le système de rappel et l'IA Gemini :)\n\nPeux-tu répondre à cet email (par exemple en disant que tu as appelé le cabinet, ou que le RDV est pris, ou en demandant mes disponibilités) ?\n\nLe robot va analyser ta réponse avec Gemini et t'envoyer automatiquement une réponse adaptée en retour !\n\nFlorent"
+    }
+  ]
+}
