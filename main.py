@@ -100,17 +100,19 @@ def main():
 
     scheduled_start_dt = state_mgr.parse_iso(state_mgr.state.get("scheduled_start_at"))
 
-    # 3. Vérification des réponses de Maman (IMAP)
+    target_label = "Florent" if "sauvageflorent.pro" in Config.TARGET_EMAIL else "Maman"
+
+    # 3. Vérification des réponses (IMAP)
     # Seulement si un premier email a déjà été envoyé
     if state_mgr.state.get("last_email_sent_at"):
-        print("🔍 Recherche de nouvelles réponses de Maman...")
+        print(f"🔍 Recherche de nouvelles réponses de {target_label}...")
         last_uid = state_mgr.state.get("last_seen_imap_uid")
         new_replies = email_svc.fetch_new_replies(last_seen_uid=last_uid)
 
         if new_replies:
             print(f"📩 {len(new_replies)} nouvelle(s) réponse(s) détectée(s) !")
             for reply in new_replies:
-                print(f"De Maman ({reply.get('date')}) : \"{reply.get('body')}\"")
+                print(f"De {target_label} ({reply.get('date')}) : \"{reply.get('body')}\"")
                 
                 # Analyse intelligente par Gemini
                 analysis = gemini.analyze_mother_reply(
@@ -119,7 +121,7 @@ def main():
                 )
                 print(f"💡 Analyse Gemini : {analysis.get('summary')}")
 
-                # Enregistrement du message de maman
+                # Enregistrement du message reçu
                 state_mgr.record_received_email(
                     uid=reply.get("uid"),
                     content=reply.get("body"),
@@ -128,36 +130,37 @@ def main():
 
                 # Cas 1 : Rendez-vous pris !
                 if analysis.get("appointment_booked"):
-                    print("🎯 RDV CONFIRMÉ PAR MAMAN !")
+                    print("🎯 RDV CONFIRMÉ !")
                     details = analysis.get("appointment_details") or reply.get("body")
                     state_mgr.mark_appointment_booked(details)
 
-                    # Envoi d'un mot de remerciement à maman
+                    # Envoi d'un mot de remerciement
                     thank_you_body = analysis.get("suggested_reply") or (
-                        f"Merci mille fois Maman ! Tu gères, c'est super gentil.\n\n"
+                        f"Merci mille fois ! C'est super gentil.\n\n"
                         f"Gros bisous,\n{Config.USER_NAME}"
                     )
                     parent_id = reply.get("message_id") or state_mgr.state.get("last_sent_message_id")
                     email_svc.send_email(
-                        to_addr=Config.MOTHER_EMAIL,
+                        to_addr=Config.TARGET_EMAIL,
                         subject=f"Re: {Config.EMAIL_SUBJECT}",
                         body_text=thank_you_body,
                         reply_to_message_id=parent_id
                     )
 
-                    # Notification pour Florent
-                    email_svc.notify_user_appointment_booked(details)
-                    print("✅ Remerciements envoyés à maman et notification transmise à Florent.")
+                    # Notification pour Florent si l'email cible était maman
+                    if Config.TARGET_EMAIL != Config.GMAIL_USER:
+                        email_svc.notify_user_appointment_booked(details)
+                    print("✅ Remerciements envoyés et confirmation enregistrée.")
                     return 0
 
-                # Cas 2 : Maman a posé une question ou répondu
+                # Cas 2 : Réponse / question
                 if analysis.get("needs_reply", True):
                     reply_text = analysis.get("suggested_reply")
                     if reply_text:
-                        print(f"✉️  Envoi de la réponse adaptée à Maman...")
+                        print(f"✉️  Envoi de la réponse adaptée à {target_label}...")
                         parent_id = reply.get("message_id") or state_mgr.state.get("last_sent_message_id")
                         msg_id = email_svc.send_email(
-                            to_addr=Config.MOTHER_EMAIL,
+                            to_addr=Config.TARGET_EMAIL,
                             subject=f"Re: {Config.EMAIL_SUBJECT}",
                             body_text=reply_text,
                             reply_to_message_id=parent_id
@@ -179,10 +182,18 @@ def main():
             return 0
 
         email_subject = f"[TEST] {Config.EMAIL_SUBJECT}" if is_test_mode else Config.EMAIL_SUBJECT
-        print(f"🚀 Envoi du premier email à Maman{' (MODE TEST)' if is_test_mode else ''}...")
+        print(f"🚀 Envoi du premier email à {target_label}{' (MODE TEST)' if is_test_mode else ''} ({Config.TARGET_EMAIL})...")
+        
+        # Ancrer le dernier UID IMAP avant l'envoi pour ne pas confondre avec d'anciens emails
+        if not state_mgr.state.get("last_seen_imap_uid"):
+            latest_uid = email_svc.get_latest_inbox_uid()
+            if latest_uid:
+                state_mgr.state["last_seen_imap_uid"] = str(latest_uid)
+                state_mgr.save()
+
         initial_text = gemini.generate_initial_email(is_test=is_test_mode)
         msg_id = email_svc.send_email(
-            to_addr=Config.MOTHER_EMAIL,
+            to_addr=Config.TARGET_EMAIL,
             subject=email_subject,
             body_text=initial_text
         )
@@ -206,7 +217,7 @@ def main():
     # C) 24h écoulées sans réponse : envoyer une relance !
     # Vérification des heures de tranquillité (ne pas envoyer entre 21h et 8h)
     if now.hour < Config.QUIET_HOURS_END or now.hour >= Config.QUIET_HOURS_START:
-        print(f"🌙 Il est {now.strftime('%H:%M')}. Relance reportée à demain matin (à partir de 8h) pour ne pas déranger Maman en pleine nuit.")
+        print(f"🌙 Il est {now.strftime('%H:%M')}. Relance reportée à demain matin (à partir de 8h) pour ne pas déranger en pleine nuit.")
         return 0
 
     count = state_mgr.state.get("reminder_count", 0)
@@ -219,7 +230,7 @@ def main():
 
     parent_id = state_mgr.state.get("last_sent_message_id")
     msg_id = email_svc.send_email(
-        to_addr=Config.MOTHER_EMAIL,
+        to_addr=Config.TARGET_EMAIL,
         subject=f"Re: {Config.EMAIL_SUBJECT}",
         body_text=reminder_text,
         reply_to_message_id=parent_id
@@ -231,7 +242,7 @@ def main():
         content=reminder_text,
         message_id=msg_id
     )
-    print(f"✅ Relance n°{count + 1} envoyée à Maman.")
+    print(f"✅ Relance n°{count + 1} envoyée à {target_label}.")
     return 0
 
 if __name__ == "__main__":

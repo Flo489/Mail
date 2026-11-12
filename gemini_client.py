@@ -161,13 +161,13 @@ Réponds uniquement avec le texte du message (pas de JSON, pas de balises markdo
     def generate_initial_email(self, is_test=False):
         """Generates the very first email sent to mom."""
         if is_test:
+            recipient_label = "Florent" if "sauvageflorent.pro" in Config.TARGET_EMAIL else "Maman"
             return (
-                f"Coucou Maman,\n\n"
-                f"Ceci est un petit message de TEST automatique de Florent pour le rendez-vous chez le dermatologue :)\n\n"
-                f"Peux-tu répondre à ce mail pour tester le système ? Tu peux me dire par exemple si tu as pris le RDV, ou me poser une question sur mes disponibilités.\n\n"
-                f"Le robot va analyser ta réponse et t'envoyer automatiquement une réponse adaptée en retour !\n\n"
-                f"Gros bisous,\n"
-                f"{Config.USER_NAME}"
+                f"Coucou {recipient_label},\n\n"
+                f"Ceci est un message de TEST automatique envoyé à {Config.TARGET_EMAIL} pour tester le système de rappel et l'IA Gemini :)\n\n"
+                f"Peux-tu répondre à cet email (par exemple en disant que tu as appelé le cabinet, ou que le RDV est pris, ou en demandant mes disponibilités) ?\n\n"
+                f"Le robot va analyser ta réponse avec Gemini et t'envoyer automatiquement une réponse adaptée en retour !\n\n"
+                f"Florent"
             )
 
         if not self.api_key:

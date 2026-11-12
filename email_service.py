@@ -11,7 +11,7 @@ class EmailService:
     def __init__(self, user=None, password=None, mother_email=None):
         self.user = user or Config.GMAIL_USER
         self.password = password or Config.GMAIL_APP_PASSWORD
-        self.mother_email = mother_email or Config.MOTHER_EMAIL
+        self.mother_email = mother_email or Config.TARGET_EMAIL or Config.MOTHER_EMAIL
         self.smtp_host = "smtp.gmail.com"
         self.smtp_port = 465
         self.imap_host = "imap.gmail.com"
@@ -157,6 +157,26 @@ class EmailService:
             print(f"[EmailService] Erreur lors de la lecture IMAP: {e}")
 
         return replies
+
+    def get_latest_inbox_uid(self):
+        """Returns the highest UID currently in INBOX, or None."""
+        if Config.DRY_RUN:
+            return None
+        try:
+            with imaplib.IMAP4_SSL(self.imap_host, self.imap_port, timeout=30) as mail:
+                mail.login(self.user, self.password)
+                status, count = mail.select("INBOX", readonly=True)
+                if status == "OK" and count and count[0]:
+                    total = int(count[0].decode())
+                    if total > 0:
+                        status_uid, uid_data = mail.fetch(str(total), "(UID)")
+                        if status_uid == "OK" and uid_data:
+                            match = re.search(rb"UID\s+(\d+)", uid_data[0])
+                            if match:
+                                return int(match.group(1))
+        except Exception as e:
+            print(f"[EmailService] Erreur lors de la récupération du dernier UID : {e}")
+        return None
 
     def _decode_header(self, raw_header):
         if not raw_header:
