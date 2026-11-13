@@ -2,12 +2,12 @@
   "status": "ACTIVE",
   "appointment_booked": false,
   "appointment_details": null,
-  "scheduled_start_at": "2026-11-13T12:38:27.211497+01:00",
-  "last_email_sent_at": "2026-11-12T19:17:40.491598+01:00",
+  "scheduled_start_at": "2026-11-13T19:47:41.754389+01:00",
+  "last_email_sent_at": "2026-11-13T19:47:45.857544+01:00",
   "last_email_received_at": "2026-11-12T18:55:45+01:00",
-  "last_sent_message_id": "<179450745900.2515.6505862336347206790@gmail.com>",
+  "last_sent_message_id": "<179459566406.2268.1188942091380765114@gmail.com>",
   "last_seen_imap_uid": "25515",
-  "reminder_count": 0,
+  "reminder_count": 1,
   "conversation_history": [
     {
       "role": "user",
@@ -25,6 +25,12 @@
       "timestamp": "2026-11-12T19:17:40.491598+01:00",
       "subject": "Re: Rendez-vous dermatologue pour Florent",
       "content": "Coucou Maman,\n\nPour mes disponibilités : Assez flexible selon la date, de préférence les après-midis ou vendredis, mais je peux m'adapter.\nPrends ce qui arrange le dermato, je ferai en sorte de m'adapter.\n\nMerci beaucoup, gros bisous !\nFlorent"
+    },
+    {
+      "role": "user",
+      "timestamp": "2026-11-13T19:47:45.857544+01:00",
+      "subject": "Re: Rendez-vous dermatologue pour Florent",
+      "content": "Coucou maman, juste un petit mot pour savoir si tu as pu regarder pour le dermato... Prends ton temps surtout, c'était juste pour que ça ne sorte pas de ta tête. Des gros bisous ! Florent"
     }
   ]
 }
