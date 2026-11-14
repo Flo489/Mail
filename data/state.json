@@ -3,11 +3,11 @@
   "appointment_booked": false,
   "appointment_details": null,
   "scheduled_start_at": "2026-11-12T16:44:21.328646+01:00",
-  "last_email_sent_at": "2026-11-13T19:47:41.661165+01:00",
+  "last_email_sent_at": "2026-11-14T19:50:06.553023+01:00",
   "last_email_received_at": null,
-  "last_sent_message_id": "<179459566043.2263.1469287372683895467@gmail.com>",
+  "last_sent_message_id": "<179468220559.2255.14074144440857402171@gmail.com>",
   "last_seen_imap_uid": "25510",
-  "reminder_count": 1,
+  "reminder_count": 2,
   "conversation_history": [
     {
       "role": "user",
@@ -20,6 +20,12 @@
       "timestamp": "2026-11-13T19:47:41.661165+01:00",
       "subject": "Re: Rendez-vous dermatologue pour Florent",
       "content": "Coucou maman, juste un petit mot pour savoir si tu as pu regarder pour le dermato... Prends ton temps, c'est juste pour ne pas que tu zappes ! \nDes gros bisous,\nFlorent"
+    },
+    {
+      "role": "user",
+      "timestamp": "2026-11-14T19:50:06.553023+01:00",
+      "subject": "Re: Rendez-vous dermatologue pour Florent",
+      "content": "Coucou maman, petit mémo pour le dermato si tu as deux minutes dans ta journée... Je sais que tu as un emploi du temps bien chargé en ce moment ! Prends le temps de regarder ça quand tu seras tranquille, gros bisous.\n\nFlorent"
     }
   ]
 }
