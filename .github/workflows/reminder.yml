@@ -59,22 +59,6 @@ jobs:
         run: |
           python main.py
 
-      - name: Vérifier également le test pro automatique (si actif)
-        run: |
-          if [ -f "data/test_pro_state.json" ]; then
-            echo "🔍 Vérification automatique du test sauvageflorent.pro..."
-            GMAIL_USER="${{ secrets.GMAIL_USER }}" \
-            GMAIL_APP_PASSWORD="${{ secrets.GMAIL_APP_PASSWORD }}" \
-            TARGET_EMAIL="sauvageflorent.pro@gmail.com" \
-            MOTHER_EMAIL="sauvageflorent.pro@gmail.com" \
-            GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
-            USER_NAME="${{ vars.USER_NAME || 'Florent' }}" \
-            STATE_FILE="data/test_pro_state.json" \
-            IS_TEST="true" \
-            FORCE_START_NOW="false" \
-            python main.py
-          fi
-
       - name: Sauvegarder l'état mis à jour
         run: |
           git config user.name "github-actions[bot]"
