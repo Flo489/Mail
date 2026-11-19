@@ -44,7 +44,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Exécuter le script de rappel pour Maman
+      - name: Exécuter le script de rappel pour Maman (Dermato)
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
@@ -52,7 +52,26 @@ jobs:
           TARGET_EMAIL: ${{ secrets.MOTHER_EMAIL }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           USER_NAME: ${{ vars.USER_NAME || 'Florent' }}
+          CAMPAIGN: 'dermato'
           STATE_FILE: 'data/state.json'
+          FORCE_START_NOW: 'false'
+          IS_TEST: 'false'
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          python main.py
+
+      - name: Exécuter le script de rappel pour Maman (Clim Electro Dépôt)
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          MOTHER_EMAIL: ${{ secrets.MOTHER_EMAIL }}
+          TARGET_EMAIL: ${{ secrets.MOTHER_EMAIL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          USER_NAME: ${{ vars.USER_NAME || 'Florent' }}
+          CAMPAIGN: 'clim'
+          STATE_FILE: 'data/clim_state.json'
+          ATTACHMENT_PATH: 'assets/clim_valberg.png'
+          REMINDER_INTERVAL_HOURS: '24'
           FORCE_START_NOW: ${{ github.event.inputs.force_start_now || 'false' }}
           IS_TEST: ${{ github.event.inputs.is_test || 'false' }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}

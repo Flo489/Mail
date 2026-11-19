@@ -1,8 +1,10 @@
+import os
 import smtplib
 import imaplib
 import email
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
 from email.utils import formataddr, make_msgid, parsedate_to_datetime
 import re
 from config import Config
@@ -17,19 +19,23 @@ class EmailService:
         self.imap_host = "imap.gmail.com"
         self.imap_port = 993
 
-    def send_email(self, to_addr, subject, body_text, reply_to_message_id=None):
+    def send_email(self, to_addr, subject, body_text, reply_to_message_id=None, attachment_path=None):
         """
         Sends an email via Gmail SMTP.
+        Supports optional image attachment (inline + downloadable).
         Returns the generated Message-ID.
         """
         if Config.DRY_RUN:
             fake_id = f"<dry-run-{make_msgid().strip('<>')}>"
             print(f"[DRY-RUN] Envoi simulé à {to_addr}")
             print(f"[DRY-RUN] Sujet: {subject}")
+            if attachment_path:
+                print(f"[DRY-RUN] Pièce jointe: {attachment_path}")
             print(f"[DRY-RUN] Message:\n{body_text}\n")
             return fake_id
 
-        msg = MIMEMultipart("alternative")
+        has_attachment = bool(attachment_path and os.path.exists(attachment_path))
+        msg = MIMEMultipart("related") if has_attachment else MIMEMultipart("alternative")
         msg["From"] = formataddr((Config.USER_NAME, self.user))
         msg["To"] = to_addr
         msg["Subject"] = subject
@@ -41,21 +47,39 @@ class EmailService:
             msg["In-Reply-To"] = reply_to_message_id
             msg["References"] = reply_to_message_id
 
+        body_container = MIMEMultipart("alternative") if has_attachment else msg
+
         # Plain text
         part_text = MIMEText(body_text, "plain", "utf-8")
-        msg.attach(part_text)
+        body_container.attach(part_text)
 
         # HTML formatted text
         html_paragraphs = "".join(f"<p>{p.replace(chr(10), '<br>')}</p>" for p in body_text.split("\n\n") if p.strip())
+        inline_img_html = (
+            '<p style="margin-top:16px;"><img src="cid:product_image" alt="Climatiseur mobile VALBERG 9000 BTU" '
+            'style="max-width:100%; height:auto; border:1px solid #e5e7eb; border-radius:8px;" /></p>'
+            if has_attachment else ""
+        )
         html_content = f"""
         <html>
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #222;">
             {html_paragraphs}
+            {inline_img_html}
           </body>
         </html>
         """
         part_html = MIMEText(html_content, "html", "utf-8")
-        msg.attach(part_html)
+        body_container.attach(part_html)
+
+        if has_attachment:
+            msg.attach(body_container)
+            with open(attachment_path, "rb") as img_file:
+                img_data = img_file.read()
+            img_part = MIMEImage(img_data)
+            filename = os.path.basename(attachment_path)
+            img_part.add_header("Content-ID", "<product_image>")
+            img_part.add_header("Content-Disposition", "inline", filename=filename)
+            msg.attach(img_part)
 
         with smtplib.SMTP_SSL(self.smtp_host, self.smtp_port, timeout=30) as server:
             server.login(self.user, self.password)
@@ -64,20 +88,34 @@ class EmailService:
         print(f"[EmailService] Email envoyé avec succès à {to_addr} (Message-ID: {msg_id})")
         return msg_id
 
-    def notify_user_appointment_booked(self, details):
-        """Sends notification to Florent that mom booked the appointment."""
-        subject = f"🎉 RDV dermatologue confirmé par Maman !"
-        body = (
-            f"Salut {Config.USER_NAME},\n\n"
-            f"Bonne nouvelle ! Ta maman a confirmé la prise du rendez-vous chez le dermatologue.\n\n"
-            f"Détails enregistrés :\n{details or 'Rendez-vous confirmé'}\n\n"
-            f"Le script s'est arrêté automatiquement et n'enverra plus aucune relance.\n\n"
-            f"— Ton assistant automatique"
-        )
+    def notify_user_goal_completed(self, details, campaign="dermato"):
+        """Sends notification to Florent that mom completed the requested goal."""
+        if campaign == "clim":
+            subject = "🎉 Achat de la clim confirmé par Maman !"
+            body = (
+                f"Salut {Config.USER_NAME},\n\n"
+                f"Bonne nouvelle ! Ta maman a confirmé l'achat/commande du climatiseur mobile VALBERG 9000 BTU.\n\n"
+                f"Détails enregistrés :\n{details or 'Achat confirmé'}\n\n"
+                f"Le script clim s'est arrêté automatiquement et n'enverra plus aucune relance.\n\n"
+                f"— Ton assistant automatique"
+            )
+        else:
+            subject = "🎉 RDV dermatologue confirmé par Maman !"
+            body = (
+                f"Salut {Config.USER_NAME},\n\n"
+                f"Bonne nouvelle ! Ta maman a confirmé la prise du rendez-vous chez le dermatologue.\n\n"
+                f"Détails enregistrés :\n{details or 'Rendez-vous confirmé'}\n\n"
+                f"Le script s'est arrêté automatiquement et n'enverra plus aucune relance.\n\n"
+                f"— Ton assistant automatique"
+            )
         try:
             self.send_email(self.user, subject, body)
         except Exception as e:
             print(f"[EmailService] Impossible d'envoyer l'email de notification utilisateur: {e}")
+
+    def notify_user_appointment_booked(self, details):
+        """Backwards-compatible wrapper for dermatologist notification."""
+        self.notify_user_goal_completed(details, campaign="dermato")
 
     def fetch_new_replies(self, last_seen_uid=None):
         """

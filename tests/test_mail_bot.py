@@ -87,5 +87,35 @@ class TestMailBot(unittest.TestCase):
         self.assertEqual(self.state_mgr.state["status"], "COMPLETED")
         self.assertEqual(self.state_mgr.state["appointment_details"], "Rendez-vous le 20 janvier à 15h30")
 
+    def test_clim_fallback_bought_detection(self):
+        gemini = GeminiClient(api_key="", campaign="clim")
+        result = gemini._fallback_analyze("C'est bon mon minou, je l'ai commandée chez Electro Dépôt !")
+        self.assertTrue(result["appointment_booked"])
+        self.assertIn("Electro Dépôt", result["appointment_details"])
+
+    def test_clim_fallback_price_question(self):
+        gemini = GeminiClient(api_key="", campaign="clim")
+        result = gemini._fallback_analyze("Elle coûte combien et c'est dans quel magasin ?")
+        self.assertFalse(result["appointment_booked"])
+        self.assertTrue(result["needs_reply"])
+        self.assertIn("219,98", result["suggested_reply"])
+        self.assertIn("Electro Dépôt", result["suggested_reply"])
+
+    def test_clim_fallback_initial_and_reminders(self):
+        gemini = GeminiClient(campaign="clim")
+        gemini.api_key = ""
+        initial = gemini.generate_initial_email(is_test=False)
+        self.assertIn("VALBERG 9000 BTU", initial)
+        self.assertIn("219,98", initial)
+        self.assertIn("30°C", initial)
+        self.assertIn("Hénin-Beaumont", initial)
+
+        rem0 = gemini._fallback_reminder(0)
+        rem1 = gemini._fallback_reminder(1)
+        rem2 = gemini._fallback_reminder(2)
+        self.assertIn("VALBERG", rem0)
+        self.assertIn("30°C", rem1)
+        self.assertIn("haha", rem2)
+
 if __name__ == "__main__":
     unittest.main()

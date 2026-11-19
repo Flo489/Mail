@@ -12,6 +12,7 @@ class Config:
     
     USER_NAME = os.getenv("USER_NAME", "Florent").strip()
     TIMEZONE = os.getenv("TIMEZONE", "Europe/Paris").strip()
+    CAMPAIGN = os.getenv("CAMPAIGN", "dermato").strip().lower()
     
     # 24 hours between reminders if no answer
     REMINDER_INTERVAL_HOURS = int(os.getenv("REMINDER_INTERVAL_HOURS", "24"))
@@ -23,7 +24,12 @@ class Config:
     QUIET_HOURS_START = int(os.getenv("QUIET_HOURS_START", "21"))
     QUIET_HOURS_END = int(os.getenv("QUIET_HOURS_END", "8"))
     
-    EMAIL_SUBJECT = os.getenv("EMAIL_SUBJECT", f"Rendez-vous dermatologue pour {USER_NAME}").strip()
+    _DEFAULT_SUBJECT = (
+        "Climatiseur mobile pour ma chambre cet été"
+        if CAMPAIGN == "clim"
+        else f"Rendez-vous dermatologue pour {USER_NAME}"
+    )
+    EMAIL_SUBJECT = os.getenv("EMAIL_SUBJECT", _DEFAULT_SUBJECT).strip()
     
     # Availability info Florent can provide if mom asks
     USER_AVAILABILITY = os.getenv(
@@ -31,7 +37,11 @@ class Config:
         "Assez flexible selon la date, de préférence les après-midis ou vendredis, mais je peux m'adapter."
     ).strip()
     
-    STATE_FILE = os.getenv("STATE_FILE", "data/state.json")
+    _DEFAULT_STATE_FILE = "data/clim_state.json" if CAMPAIGN == "clim" else "data/state.json"
+    STATE_FILE = os.getenv("STATE_FILE", _DEFAULT_STATE_FILE)
+    
+    _DEFAULT_ATTACHMENT = "assets/clim_valberg.png" if CAMPAIGN == "clim" else ""
+    ATTACHMENT_PATH = os.getenv("ATTACHMENT_PATH", _DEFAULT_ATTACHMENT).strip()
     
     DRY_RUN = os.getenv("DRY_RUN", "false").lower() in ("true", "1", "yes")
     IS_TEST = os.getenv("IS_TEST", "false").lower() in ("true", "1", "yes")

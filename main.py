@@ -60,7 +60,8 @@ def main():
 
     tz = pytz.timezone(Config.TIMEZONE)
     now = datetime.now(tz)
-    print(f"[{now.strftime('%Y-%m-%d %H:%M:%S %Z')}] Lancement de la vérification...")
+    campaign_label = "Achat clim mobile" if Config.CAMPAIGN == "clim" else "Rendez-vous dermatologue"
+    print(f"[{now.strftime('%Y-%m-%d %H:%M:%S %Z')}] [{campaign_label}] Lancement de la vérification...")
 
     # 1. Validation de la configuration
     errors = Config.validate(check_gemini=bool(Config.GEMINI_API_KEY), check_email=not Config.DRY_RUN)
@@ -73,13 +74,13 @@ def main():
 
     # 2. Vérification si déjà terminé
     if state_mgr.is_completed():
-        print(f"🎉 Le rendez-vous chez le dermatologue a déjà été confirmé !")
+        print(f"🎉 Objectif déjà confirmé ({campaign_label}) !")
         if state_mgr.state.get("appointment_details"):
             print(f"Détails : {state_mgr.state.get('appointment_details')}")
         print("Aucune action requise. Fin du processus.")
         return 0
 
-    gemini = GeminiClient()
+    gemini = GeminiClient(campaign=Config.CAMPAIGN)
     email_svc = EmailService()
 
     is_test_mode = args.test or Config.IS_TEST
@@ -128,9 +129,9 @@ def main():
                     date_iso=reply.get("date")
                 )
 
-                # Cas 1 : Rendez-vous pris !
+                # Cas 1 : Objectif confirmé (RDV pris ou clim achetée) !
                 if analysis.get("appointment_booked"):
-                    print("🎯 RDV CONFIRMÉ !")
+                    print(f"🎯 CONFIRMATION REÇUE ({campaign_label}) !")
                     details = analysis.get("appointment_details") or reply.get("body")
                     state_mgr.mark_appointment_booked(details)
 
@@ -149,7 +150,7 @@ def main():
 
                     # Notification pour Florent si l'email cible était maman
                     if Config.TARGET_EMAIL != Config.GMAIL_USER:
-                        email_svc.notify_user_appointment_booked(details)
+                        email_svc.notify_user_goal_completed(details, campaign=Config.CAMPAIGN)
                     print("✅ Remerciements envoyés et confirmation enregistrée.")
                     return 0
 
@@ -195,7 +196,8 @@ def main():
         msg_id = email_svc.send_email(
             to_addr=Config.TARGET_EMAIL,
             subject=email_subject,
-            body_text=initial_text
+            body_text=initial_text,
+            attachment_path=Config.ATTACHMENT_PATH or None
         )
         state_mgr.record_sent_email(
             subject=email_subject,
