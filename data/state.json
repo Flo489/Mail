@@ -1,12 +1,16 @@
 {
-  "status": "ACTIVE",
-  "appointment_booked": false,
-  "appointment_details": null,
+  "status": "COMPLETED",
+  "appointment_booked": true,
+  "appointment_details": {
+    "date": "2 décembre 2026",
+    "time": null,
+    "location": null
+  },
   "scheduled_start_at": "2026-11-12T16:44:21.328646+01:00",
   "last_email_sent_at": "2026-11-18T20:00:17.778943+01:00",
-  "last_email_received_at": null,
+  "last_email_received_at": "2026-11-18T20:27:30+01:00",
   "last_sent_message_id": "<179502841629.2290.1059850975728058250@gmail.com>",
-  "last_seen_imap_uid": "25510",
+  "last_seen_imap_uid": "25569",
   "reminder_count": 5,
   "conversation_history": [
     {
@@ -44,6 +48,11 @@
       "timestamp": "2026-11-18T20:00:17.778943+01:00",
       "subject": "Re: Rendez-vous dermatologue pour Florent",
       "content": "Coucou maman,\n\nC'est encore ton fils préféré et son fameux dermato, épisode 5 ! 😄 \n\nJe sais que tu as toujours mille choses à faire, mais je ne lâche rien parce que je tiens à toi. Promis, dès que tu m'ann"
+    },
+    {
+      "role": "mother",
+      "timestamp": "2026-11-18T20:27:30+01:00",
+      "content": "Bonjour mon minou préféré\r\nC'est bon je t'ai pris un rdv le 2 décembre. Bisous\r\n\r\nLe mer. 18 nov. 2026, 20:00, Florent <florentsauvage.contact@gmail.com> a\r\nécrit :"
     }
   ]
 }
