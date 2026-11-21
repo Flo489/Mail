@@ -15,6 +15,15 @@ Produit souhaité : Climatiseur mobile VALBERG 9000 BTU pour pièce de 20m² (ch
 - Une capture d'écran de la fiche produit Electro Dépôt est jointe au premier email.
 """.strip()
 
+DENTISTE_CONTEXT = """
+Motif du rendez-vous chez le dentiste pour Florent :
+- Des traces brunâtres à grisâtres sont apparues récemment en surface sur le bord inférieur des deux incisives du haut (et plus discrètement sur celles du bas).
+- Ce type de marque correspond très probablement à une coloration superficielle bénigne — causée par des pigments alimentaires, un produit d'hygiène dentaire ou un assèchement passager de l'émail — et non à une atteinte profonde de la dent.
+- Ce phénomène est réversible : il convient de conserver un brossage doux normal pendant deux à trois semaines en évitant absolument les produits abrasifs (bicarbonate, citron, dentifrice blancheur) qui risqueraient de rayer l'émail.
+- Si les taches ne s'estompent pas d'elles-mêmes d'ici là, ou si une sensibilité apparaît, une consultation classique chez le dentiste permettra de les éliminer rapidement par un simple polissage.
+- Choix du dentiste : pas de dentiste précis imposé, une consultation classique chez un dentiste disponible conviendra très bien.
+""".strip()
+
 class GeminiClient:
     def __init__(self, api_key=None, campaign=None):
         self.api_key = api_key or Config.GEMINI_API_KEY
@@ -133,6 +142,44 @@ Réponds STRICTEMENT sous ce format JSON :
   "suggested_reply": "..."
 }}
 """
+        elif self.campaign == "dentiste":
+            system_instruction = (
+                f"Tu es un assistant personnel qui aide {Config.USER_NAME} à gérer la prise d'un rendez-vous chez le dentiste "
+                "par sa maman ('Maman'). Le ton est bienveillant, affectueux, rassurant et naturel (Florent tutoie sa mère et l'appelle 'Maman').\n"
+                "Tu dois analyser la réponse de sa mère avec précision."
+            )
+            prompt = f"""
+Voici l'historique des derniers échanges :
+{history_formatted}
+
+Voici le NOUVEAU message reçu de Maman :
+\"\"\"{new_reply_text}\"\"\"
+
+Informations disponibles sur Florent :
+- Prénom : {Config.USER_NAME}
+- Disponibilités si demandées : {Config.USER_AVAILABILITY}
+{DENTISTE_CONTEXT}
+
+Consignes strictes :
+1. "appointment_booked" : mets TRUE UNIQUEMENT si la maman affirme clairement que le rendez-vous chez le dentiste a été pris ou réservé (ex: "c'est bon le rdv est pris", "j'ai pris rdv le 12 mai à 14h"). Si elle dit qu'elle va appeler, qu'elle essaiera plus tard, ou qu'elle pose une question, mets FALSE.
+2. "appointment_details" : si le rdv est pris, extrais la date, heure et lieu mentionnés. Sinon null.
+3. "summary" : résumé court en 1 phrase de ce qu'elle dit.
+4. "needs_reply" : true si sa réponse appelle une réponse de Florent (ex: elle s'inquiète des taches, pose une question sur ses disponibilités ou sur ce que c'est, ou confirme le rdv pour la remercier).
+5. "suggested_reply" : rédige un email complet en français, naturel, affectueux, rassurant, tutoyant sa maman ('tu', 'Maman'), signé '{Config.USER_NAME}'.
+   - Si le rdv est pris : remercie-la chaleureusement ("Merci mille fois maman ! Tu gères...").
+   - Si elle s'inquiète ou demande des précisions sur les taches : rassure-la en utilisant les infos du contexte (coloration superficielle bénigne et réversible, probablement pigments alimentaires / produit d'hygiène / assèchement passager de l'émail, pas une atteinte profonde, brossage doux sans produits abrasifs et un simple polissage chez le dentiste suffira si besoin).
+   - Si elle demande des disponibilités : donne gentiment ses disponibilités ({Config.USER_AVAILABILITY}) en restant très souple.
+   - Si elle n'a pas eu le temps : rassure-la gentiment ("Pas de souci maman, prends ton temps...").
+
+Réponds STRICTEMENT sous ce format JSON :
+{{
+  "appointment_booked": false,
+  "appointment_details": null,
+  "summary": "...",
+  "needs_reply": true,
+  "suggested_reply": "..."
+}}
+"""
         else:
             system_instruction = (
                 "Tu es un assistant personnel qui aide Florent à gérer la prise d'un rendez-vous chez le dermatologue "
@@ -198,6 +245,21 @@ Contexte produit :
 - Relance 1 : simple rappel doux et gentil ("Coucou maman, juste un petit mot pour savoir si tu as pu jeter un œil à la clim chez Electro Dépôt...").
 - Relance 2 : tendre, compréhension de son emploi du temps chargé, petit clin d'œil aux +30°C dans la chambre en été.
 - Relance 3+ : avec un brin d'humour bienveillant (ex: "c'est encore moi et ma survie face aux 30°C dans ma chambre haha ! Promis dès que c'est commandé je te laisse tranquille...").
+
+Réponds uniquement avec le texte complet du message (pas de JSON, pas de balises markdown).
+"""
+        elif self.campaign == "dentiste":
+            system_instruction = (
+                f"Tu rédiges un email de relance de la part de {Config.USER_NAME} à sa maman ('Maman').\n"
+                "Le ton doit être doux, affectueux, rassurant, sans pression mais efficace. C'est pour lui rappeler "
+                "de prendre un rendez-vous classique chez le dentiste (pour vérifier/polir les petites traces superficielles sur les incisives)."
+            )
+            prompt = f"""
+C'est la relance numéro {reminder_count + 1} (environ {(reminder_count + 1) * 24}h se sont écoulées sans réponse).
+Écris un message court, affectueux et naturel en français, signé '{Config.USER_NAME}'.
+- Relance 1 : simple rappel doux et gentil ("Coucou maman, juste un petit mot pour savoir si tu as pu regarder pour le dentiste...").
+- Relance 2 : tendre, compréhension de son emploi du temps chargé, en rappelant que ce n'est rien de grave mais qu'il vaut mieux caler un créneau si besoin d'un polissage.
+- Relance 3+ : avec un brin d'humour bienveillant ("Coucou maman, c'est encore moi et mon histoire de dentiste haha ! Promis dès que le rendez-vous est pris je te laisse tranquille...").
 
 Réponds uniquement avec le texte complet du message (pas de JSON, pas de balises markdown).
 """
@@ -273,6 +335,41 @@ Consignes :
                 return text.strip()
             except Exception:
                 return fallback_clim
+
+        if self.campaign == "dentiste":
+            fallback_dentiste = (
+                f"Coucou Maman,\n\n"
+                f"J'espère que tu vas bien ! Je voulais te demander si tu pouvais me prendre un rendez-vous chez le dentiste quand tu auras un petit moment.\n\n"
+                f"Rien d'urgent ni de grave, ne t'inquiète pas : j'ai juste remarqué récemment de petites traces brunâtres à grisâtres en surface sur le bord inférieur "
+                f"des deux incisives du haut (et plus discrètement sur celles du bas). D'après ce que j'ai regardé, ça correspond très probablement à une coloration "
+                f"superficielle bénigne (due à des pigments alimentaires, un produit d'hygiène ou un assèchement passager de l'émail), et non à une atteinte profonde.\n\n"
+                f"Je vais garder un brossage doux normal pendant 2 à 3 semaines en évitant les produits abrasifs (bicarbonate, citron, dentifrice blancheur), "
+                f"mais si ça ne s'estompe pas d'ici là ou si une sensibilité apparaît, une consultation classique permettra de les enlever facilement avec un simple polissage.\n\n"
+                f"Tiens-moi au courant quand tu as pu voir pour le rendez-vous ou si tu as besoin de mes disponibilités !\n\n"
+                f"Gros bisous,\n"
+                f"{Config.USER_NAME}"
+            )
+            if not self.api_key:
+                return fallback_dentiste
+
+            prompt = f"""
+Rédige le tout premier email de la part de {Config.USER_NAME} à sa maman ('Maman') pour lui demander de lui prendre un rendez-vous chez le dentiste.
+
+Voici les détails précis de la situation :
+{DENTISTE_CONTEXT}
+
+Consignes :
+- Ton très naturel, affectueux, rassurant et attentionné, tutoyant sa maman ('Maman').
+- Explique clairement et rassure-la : des traces brunâtres à grisâtres sont apparues récemment en surface sur le bord inférieur des deux incisives du haut (et plus discrètement sur celles du bas), mais c'est très probablement une coloration superficielle bénigne et réversible (pigments alimentaires, produit d'hygiène ou assèchement passager de l'émail), pas une atteinte profonde.
+- Précise qu'il garde un brossage doux pendant 2 à 3 semaines sans produits abrasifs (bicarbonate, citron, dentifrice blancheur), et qu'une consultation classique chez le dentiste permettra de les éliminer rapidement par un simple polissage si ça ne part pas ou si une sensibilité apparaît.
+- Signé '{Config.USER_NAME}'.
+- Réponds uniquement avec le texte du message (pas d'objet, pas de balises markdown).
+"""
+            try:
+                text = self._call_gemini(prompt, json_mode=False)
+                return text.strip()
+            except Exception:
+                return fallback_dentiste
 
         if not self.api_key:
             return (
@@ -362,12 +459,13 @@ Réponds uniquement avec le texte du message.
         
         # Check if asking for availability
         if any(w in t for w in ["dispo", "disponibilité", "quand", "quel jour", "quelle heure"]):
+            specialist = "le dentiste" if self.campaign == "dentiste" else "le dermato"
             return {
                 "appointment_booked": False,
                 "appointment_details": None,
                 "summary": "Maman demande les disponibilités.",
                 "needs_reply": True,
-                "suggested_reply": f"Coucou Maman,\n\nPour mes disponibilités : {Config.USER_AVAILABILITY}\nPrends ce qui arrange le dermato, je ferai en sorte de m'adapter.\n\nMerci beaucoup, gros bisous !\n{Config.USER_NAME}"
+                "suggested_reply": f"Coucou Maman,\n\nPour mes disponibilités : {Config.USER_AVAILABILITY}\nPrends ce qui arrange {specialist}, je ferai en sorte de m'adapter.\n\nMerci beaucoup, gros bisous !\n{Config.USER_NAME}"
             }
 
         return {
@@ -400,6 +498,30 @@ Réponds uniquement avec le texte du message.
                 return (
                     f"Coucou Maman,\n\n"
                     f"C'est encore moi et ma survie face aux +30°C dans ma chambre haha ! Promis, dès que la clim est commandée je ne t'embête plus avec ça :)\n\n"
+                    f"Bon courage pour ta journée, bisous !\n"
+                    f"{Config.USER_NAME}"
+                )
+
+        if self.campaign == "dentiste":
+            if count == 0:
+                return (
+                    f"Coucou Maman,\n\n"
+                    f"J'espère que tu as passé une bonne journée ! Petit rappel tout doux pour savoir si tu as eu l'occasion d'appeler le dentiste "
+                    f"pour les petites traces sur mes incisives ? Pas de panique si tu n'as pas eu le temps, dis-moi juste dès que tu peux.\n\n"
+                    f"Gros bisous,\n"
+                    f"{Config.USER_NAME}"
+                )
+            elif count == 1:
+                return (
+                    f"Coucou Maman,\n\n"
+                    f"Je sais que tes journées sont bien remplies ! Juste un petit mémo pour le rendez-vous dentiste (pour un éventuel polissage) quand tu auras deux minutes.\n\n"
+                    f"Bonne journée, gros bisous !\n"
+                    f"{Config.USER_NAME}"
+                )
+            else:
+                return (
+                    f"Coucou Maman,\n\n"
+                    f"C'est encore moi avec mon histoire de dentiste haha ! Promis, dès que le rendez-vous est calé je ne t'embête plus avec ça :)\n\n"
                     f"Bon courage pour ta journée, bisous !\n"
                     f"{Config.USER_NAME}"
                 )

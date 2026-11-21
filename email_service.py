@@ -99,6 +99,15 @@ class EmailService:
                 f"Le script clim s'est arrêté automatiquement et n'enverra plus aucune relance.\n\n"
                 f"— Ton assistant automatique"
             )
+        elif campaign == "dentiste":
+            subject = "🎉 RDV dentiste confirmé par Maman !"
+            body = (
+                f"Salut {Config.USER_NAME},\n\n"
+                f"Bonne nouvelle ! Ta maman a confirmé la prise du rendez-vous chez le dentiste.\n\n"
+                f"Détails enregistrés :\n{details or 'Rendez-vous confirmé'}\n\n"
+                f"Le script dentiste s'est arrêté automatiquement et n'enverra plus aucune relance.\n\n"
+                f"— Ton assistant automatique"
+            )
         else:
             subject = "🎉 RDV dermatologue confirmé par Maman !"
             body = (
@@ -117,7 +126,35 @@ class EmailService:
         """Backwards-compatible wrapper for dermatologist notification."""
         self.notify_user_goal_completed(details, campaign="dermato")
 
-    def fetch_new_replies(self, last_seen_uid=None):
+    def _matches_campaign(self, subject, in_reply_to, references, campaign=None, expected_message_id=None):
+        """Checks whether an incoming email belongs to the specified campaign."""
+        if not campaign:
+            return True
+
+        if expected_message_id:
+            clean_id = expected_message_id.strip()
+            if clean_id and (clean_id in (in_reply_to or "") or clean_id in (references or "")):
+                return True
+
+        subj = (subject or "").lower()
+        campaign_keywords = {
+            "clim": ("clim", "valberg", "electro"),
+            "dentiste": ("dentiste", "dent", "incisive"),
+            "dermato": ("dermato", "dermatologue"),
+        }
+
+        own_kws = campaign_keywords.get(campaign, ())
+        if any(kw in subj for kw in own_kws):
+            return True
+
+        # Reject if the subject explicitly belongs to another campaign
+        for other_camp, kws in campaign_keywords.items():
+            if other_camp != campaign and any(kw in subj for kw in kws):
+                return False
+
+        return True
+
+    def fetch_new_replies(self, last_seen_uid=None, campaign=None, expected_message_id=None):
         """
         Fetches unread / recent replies from mother's email address via IMAP.
         Returns a list of dicts:
@@ -171,6 +208,12 @@ class EmailService:
 
                     msg_id = parsed_email.get("Message-ID", "")
                     subject = self._decode_header(parsed_email.get("Subject", ""))
+                    in_reply_to = parsed_email.get("In-Reply-To", "")
+                    references = parsed_email.get("References", "")
+
+                    if not self._matches_campaign(subject, in_reply_to, references, campaign=campaign, expected_message_id=expected_message_id):
+                        continue
+
                     date_header = parsed_email.get("Date", "")
                     
                     try:

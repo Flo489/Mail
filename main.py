@@ -60,7 +60,12 @@ def main():
 
     tz = pytz.timezone(Config.TIMEZONE)
     now = datetime.now(tz)
-    campaign_label = "Achat clim mobile" if Config.CAMPAIGN == "clim" else "Rendez-vous dermatologue"
+    if Config.CAMPAIGN == "clim":
+        campaign_label = "Achat clim mobile"
+    elif Config.CAMPAIGN == "dentiste":
+        campaign_label = "Rendez-vous dentiste"
+    else:
+        campaign_label = "Rendez-vous dermatologue"
     print(f"[{now.strftime('%Y-%m-%d %H:%M:%S %Z')}] [{campaign_label}] Lancement de la vérification...")
 
     # 1. Validation de la configuration
@@ -108,7 +113,11 @@ def main():
     if state_mgr.state.get("last_email_sent_at"):
         print(f"🔍 Recherche de nouvelles réponses de {target_label}...")
         last_uid = state_mgr.state.get("last_seen_imap_uid")
-        new_replies = email_svc.fetch_new_replies(last_seen_uid=last_uid)
+        new_replies = email_svc.fetch_new_replies(
+            last_seen_uid=last_uid,
+            campaign=Config.CAMPAIGN,
+            expected_message_id=state_mgr.state.get("last_sent_message_id")
+        )
 
         if new_replies:
             print(f"📩 {len(new_replies)} nouvelle(s) réponse(s) détectée(s) !")

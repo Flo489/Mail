@@ -78,6 +78,23 @@ jobs:
         run: |
           python main.py
 
+      - name: Exécuter le script de rappel pour Maman (Dentiste)
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          MOTHER_EMAIL: ${{ secrets.MOTHER_EMAIL }}
+          TARGET_EMAIL: ${{ secrets.MOTHER_EMAIL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          USER_NAME: ${{ vars.USER_NAME || 'Florent' }}
+          CAMPAIGN: 'dentiste'
+          STATE_FILE: 'data/dentiste_state.json'
+          REMINDER_INTERVAL_HOURS: '24'
+          FORCE_START_NOW: ${{ github.event.inputs.force_start_now || 'false' }}
+          IS_TEST: ${{ github.event.inputs.is_test || 'false' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          python main.py
+
       - name: Sauvegarder l'état mis à jour
         run: |
           git config user.name "github-actions[bot]"

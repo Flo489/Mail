@@ -117,5 +117,36 @@ class TestMailBot(unittest.TestCase):
         self.assertIn("30°C", rem1)
         self.assertIn("haha", rem2)
 
+    def test_dentiste_fallback_initial_and_reminders(self):
+        gemini = GeminiClient(campaign="dentiste")
+        gemini.api_key = ""
+        initial = gemini.generate_initial_email(is_test=False)
+        self.assertIn("dentiste", initial.lower())
+        self.assertIn("incisives", initial.lower())
+        self.assertIn("polissage", initial.lower())
+        self.assertIn("bicarbonate", initial.lower())
+
+        rem0 = gemini._fallback_reminder(0)
+        rem1 = gemini._fallback_reminder(1)
+        rem2 = gemini._fallback_reminder(2)
+        self.assertIn("dentiste", rem0.lower())
+        self.assertIn("polissage", rem1.lower())
+        self.assertIn("haha", rem2.lower())
+
+        dispo = gemini._fallback_analyze("Tu es dispo quel jour ?")
+        self.assertFalse(dispo["appointment_booked"])
+        self.assertIn("dentiste", dispo["suggested_reply"].lower())
+
+        booked = gemini._fallback_analyze("C'est bon, le rdv est pris pour le 10 décembre à 15h !")
+        self.assertTrue(booked["appointment_booked"])
+
+    def test_email_service_campaign_matching(self):
+        svc = EmailService()
+        self.assertTrue(svc._matches_campaign("Re: Rendez-vous dentiste pour Florent", "", "", campaign="dentiste"))
+        self.assertFalse(svc._matches_campaign("Re: Climatiseur mobile pour ma chambre cet été", "", "", campaign="dentiste"))
+        self.assertTrue(svc._matches_campaign("Re: Climatiseur mobile pour ma chambre cet été", "", "", campaign="clim"))
+        self.assertFalse(svc._matches_campaign("Re: Rendez-vous dentiste pour Florent", "", "", campaign="clim"))
+        self.assertTrue(svc._matches_campaign("Nouveau message", "<msg-123@gmail.com>", "", campaign="dentiste", expected_message_id="<msg-123@gmail.com>"))
+
 if __name__ == "__main__":
     unittest.main()
