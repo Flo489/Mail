@@ -22,19 +22,28 @@ class EmailService:
     def send_email(self, to_addr, subject, body_text, reply_to_message_id=None, attachment_path=None):
         """
         Sends an email via Gmail SMTP.
-        Supports optional image attachment (inline + downloadable).
+        Supports optional image attachments (single path, comma-separated paths, or list of paths).
         Returns the generated Message-ID.
         """
+        if isinstance(attachment_path, (list, tuple)):
+            raw_paths = [str(p).strip() for p in attachment_path if str(p).strip()]
+        elif isinstance(attachment_path, str) and attachment_path.strip():
+            raw_paths = [p.strip() for p in attachment_path.split(",") if p.strip()]
+        else:
+            raw_paths = []
+
+        valid_paths = [p for p in raw_paths if os.path.exists(p)]
+
         if Config.DRY_RUN:
             fake_id = f"<dry-run-{make_msgid().strip('<>')}>"
             print(f"[DRY-RUN] Envoi simulé à {to_addr}")
             print(f"[DRY-RUN] Sujet: {subject}")
-            if attachment_path:
-                print(f"[DRY-RUN] Pièce jointe: {attachment_path}")
+            if raw_paths:
+                print(f"[DRY-RUN] Pièce(s) jointe(s): {', '.join(raw_paths)}")
             print(f"[DRY-RUN] Message:\n{body_text}\n")
             return fake_id
 
-        has_attachment = bool(attachment_path and os.path.exists(attachment_path))
+        has_attachment = bool(valid_paths)
         msg = MIMEMultipart("related") if has_attachment else MIMEMultipart("alternative")
         msg["From"] = formataddr((Config.USER_NAME, self.user))
         msg["To"] = to_addr
@@ -55,10 +64,10 @@ class EmailService:
 
         # HTML formatted text
         html_paragraphs = "".join(f"<p>{p.replace(chr(10), '<br>')}</p>" for p in body_text.split("\n\n") if p.strip())
-        inline_img_html = (
-            '<p style="margin-top:16px;"><img src="cid:product_image" alt="Climatiseur mobile VALBERG 9000 BTU" '
+        inline_img_html = "".join(
+            f'<p style="margin-top:16px;"><img src="cid:product_image_{idx}" alt="Produit {idx}" '
             'style="max-width:100%; height:auto; border:1px solid #e5e7eb; border-radius:8px;" /></p>'
-            if has_attachment else ""
+            for idx, _ in enumerate(valid_paths, 1)
         )
         html_content = f"""
         <html>
@@ -73,13 +82,14 @@ class EmailService:
 
         if has_attachment:
             msg.attach(body_container)
-            with open(attachment_path, "rb") as img_file:
-                img_data = img_file.read()
-            img_part = MIMEImage(img_data)
-            filename = os.path.basename(attachment_path)
-            img_part.add_header("Content-ID", "<product_image>")
-            img_part.add_header("Content-Disposition", "inline", filename=filename)
-            msg.attach(img_part)
+            for idx, path in enumerate(valid_paths, 1):
+                with open(path, "rb") as img_file:
+                    img_data = img_file.read()
+                img_part = MIMEImage(img_data)
+                filename = os.path.basename(path)
+                img_part.add_header("Content-ID", f"<product_image_{idx}>")
+                img_part.add_header("Content-Disposition", "inline", filename=filename)
+                msg.attach(img_part)
 
         with smtplib.SMTP_SSL(self.smtp_host, self.smtp_port, timeout=30) as server:
             server.login(self.user, self.password)
@@ -97,6 +107,15 @@ class EmailService:
                 f"Bonne nouvelle ! Ta maman a confirmé l'achat/commande du climatiseur mobile VALBERG 9000 BTU.\n\n"
                 f"Détails enregistrés :\n{details or 'Achat confirmé'}\n\n"
                 f"Le script clim s'est arrêté automatiquement et n'enverra plus aucune relance.\n\n"
+                f"— Ton assistant automatique"
+            )
+        elif campaign == "accessoires_clim":
+            subject = "🎉 Accessoires clim (tuyau + kit fenêtre) confirmés par Maman !"
+            body = (
+                f"Salut {Config.USER_NAME},\n\n"
+                f"Bonne nouvelle ! Ta maman a confirmé l'achat/commande des accessoires clim (tuyau 3m 150mm + tissu d'isolation fenêtre HOOMEE).\n\n"
+                f"Détails enregistrés :\n{details or 'Achat confirmé'}\n\n"
+                f"Le script accessoires clim s'est arrêté automatiquement et n'enverra plus aucune relance.\n\n"
                 f"— Ton assistant automatique"
             )
         elif campaign == "dentiste":
@@ -132,13 +151,18 @@ class EmailService:
             return True
 
         if expected_message_id:
-            clean_id = expected_message_id.strip()
-            if clean_id and (clean_id in (in_reply_to or "") or clean_id in (references or "")):
-                return True
+            if isinstance(expected_message_id, (list, tuple, set)):
+                expected_ids = [str(eid).strip() for eid in expected_message_id if str(eid).strip()]
+            else:
+                expected_ids = [str(expected_message_id).strip()] if str(expected_message_id).strip() else []
+            for clean_id in expected_ids:
+                if clean_id in (in_reply_to or "") or clean_id in (references or ""):
+                    return True
 
         subj = (subject or "").lower()
         campaign_keywords = {
-            "clim": ("clim", "valberg", "electro"),
+            "accessoires_clim": ("accessoires", "tuyau", "fenêtre", "fenetre", "hoomee"),
+            "clim": ("climatiseur mobile", "valberg", "electro"),
             "dentiste": ("dentiste", "dent", "incisive"),
             "dermato": ("dermato", "dermatologue"),
         }
@@ -154,89 +178,89 @@ class EmailService:
 
         return True
 
-    def fetch_new_replies(self, last_seen_uid=None, campaign=None, expected_message_id=None):
+    def fetch_new_replies(self, last_seen_uid=None, campaign=None, expected_message_id=None, sender_emails=None):
         """
-        Fetches unread / recent replies from mother's email address via IMAP.
-        Returns a list of dicts:
-        [
-            {
-                "uid": int,
-                "message_id": str,
-                "date": iso_string,
-                "subject": str,
-                "body": str (clean, stripped of quotes)
-            }
-        ]
+        Fetches unread / recent replies from target email address(es) via IMAP.
+        sender_emails: optional dict {email_addr: role} (e.g. {"maman@...": "mother", "julie@...": "sister"}).
         """
         if Config.DRY_RUN:
             print("[DRY-RUN] Recherche de réponses IMAP simulée (aucune nouvelle réponse).")
             return []
 
+        if not sender_emails:
+            sender_emails = {self.mother_email: "mother"}
+
         replies = []
+        seen_uids = set()
         try:
             with imaplib.IMAP4_SSL(self.imap_host, self.imap_port, timeout=30) as mail:
                 mail.login(self.user, self.password)
                 mail.select("INBOX", readonly=True)
 
-                # Search for messages from mother
-                search_query = f'(FROM "{self.mother_email}")'
-                status, data = mail.search(None, search_query)
-                if status != "OK" or not data or not data[0]:
-                    return []
-
-                message_ids = data[0].split()
-                # Process messages
-                for num in message_ids:
-                    # Fetch UID
-                    status_uid, uid_data = mail.fetch(num, "(UID)")
-                    uid = None
-                    if status_uid == "OK" and uid_data:
-                        match = re.search(rb"UID\s+(\d+)", uid_data[0])
-                        if match:
-                            uid = int(match.group(1))
-
-                    if uid and last_seen_uid and uid <= int(last_seen_uid):
+                for sender_addr, sender_role in sender_emails.items():
+                    if not sender_addr:
+                        continue
+                    search_query = f'(FROM "{sender_addr}")'
+                    status, data = mail.search(None, search_query)
+                    if status != "OK" or not data or not data[0]:
                         continue
 
-                    # Fetch message content
-                    status_msg, msg_data = mail.fetch(num, "(RFC822)")
-                    if status_msg != "OK" or not msg_data:
-                        continue
+                    message_ids = data[0].split()
+                    for num in message_ids:
+                        status_uid, uid_data = mail.fetch(num, "(UID)")
+                        uid = None
+                        if status_uid == "OK" and uid_data:
+                            match = re.search(rb"UID\s+(\d+)", uid_data[0])
+                            if match:
+                                uid = int(match.group(1))
 
-                    raw_email = msg_data[0][1]
-                    parsed_email = email.message_from_bytes(raw_email)
+                        if uid and last_seen_uid and uid <= int(last_seen_uid):
+                            continue
+                        if uid and uid in seen_uids:
+                            continue
 
-                    msg_id = parsed_email.get("Message-ID", "")
-                    subject = self._decode_header(parsed_email.get("Subject", ""))
-                    in_reply_to = parsed_email.get("In-Reply-To", "")
-                    references = parsed_email.get("References", "")
+                        status_msg, msg_data = mail.fetch(num, "(RFC822)")
+                        if status_msg != "OK" or not msg_data:
+                            continue
 
-                    if not self._matches_campaign(subject, in_reply_to, references, campaign=campaign, expected_message_id=expected_message_id):
-                        continue
+                        raw_email = msg_data[0][1]
+                        parsed_email = email.message_from_bytes(raw_email)
 
-                    date_header = parsed_email.get("Date", "")
-                    
-                    try:
-                        date_dt = parsedate_to_datetime(date_header)
-                        date_iso = date_dt.isoformat()
-                    except Exception:
-                        date_iso = None
+                        msg_id = parsed_email.get("Message-ID", "")
+                        subject = self._decode_header(parsed_email.get("Subject", ""))
+                        in_reply_to = parsed_email.get("In-Reply-To", "")
+                        references = parsed_email.get("References", "")
 
-                    body = self._extract_body(parsed_email)
-                    clean_body = self._clean_reply_text(body)
+                        if not self._matches_campaign(subject, in_reply_to, references, campaign=campaign, expected_message_id=expected_message_id):
+                            continue
 
-                    if clean_body.strip():
-                        replies.append({
-                            "uid": uid,
-                            "message_id": msg_id,
-                            "date": date_iso,
-                            "subject": subject,
-                            "body": clean_body
-                        })
+                        date_header = parsed_email.get("Date", "")
+                        try:
+                            date_dt = parsedate_to_datetime(date_header)
+                            date_iso = date_dt.isoformat()
+                        except Exception:
+                            date_iso = None
+
+                        body = self._extract_body(parsed_email)
+                        clean_body = self._clean_reply_text(body)
+
+                        if clean_body.strip():
+                            if uid:
+                                seen_uids.add(uid)
+                            replies.append({
+                                "uid": uid,
+                                "message_id": msg_id,
+                                "date": date_iso,
+                                "subject": subject,
+                                "body": clean_body,
+                                "sender_email": sender_addr,
+                                "sender_role": sender_role,
+                            })
 
         except Exception as e:
             print(f"[EmailService] Erreur lors de la lecture IMAP: {e}")
 
+        replies.sort(key=lambda r: r.get("uid") or 0)
         return replies
 
     def get_latest_inbox_uid(self):

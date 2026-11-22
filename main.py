@@ -62,6 +62,8 @@ def main():
     now = datetime.now(tz)
     if Config.CAMPAIGN == "clim":
         campaign_label = "Achat clim mobile"
+    elif Config.CAMPAIGN == "accessoires_clim":
+        campaign_label = "Accessoires clim (tuyau + kit fenêtre)"
     elif Config.CAMPAIGN == "dentiste":
         campaign_label = "Rendez-vous dentiste"
     else:
@@ -107,27 +109,50 @@ def main():
     scheduled_start_dt = state_mgr.parse_iso(state_mgr.state.get("scheduled_start_at"))
 
     target_label = "Florent" if "sauvageflorent.pro" in Config.TARGET_EMAIL else "Maman"
+    sister_name = Config.SISTER_NAME or "Julie"
+    has_sister = (Config.CAMPAIGN == "accessoires_clim" and bool(Config.SISTER_EMAIL))
 
     # 3. Vérification des réponses (IMAP)
     # Seulement si un premier email a déjà été envoyé
     if state_mgr.state.get("last_email_sent_at"):
-        print(f"🔍 Recherche de nouvelles réponses de {target_label}...")
+        search_desc = f"{target_label} et {sister_name}" if has_sister else target_label
+        print(f"🔍 Recherche de nouvelles réponses de {search_desc}...")
         last_uid = state_mgr.state.get("last_seen_imap_uid")
+
+        sender_emails = {Config.TARGET_EMAIL: "mother"}
+        if has_sister:
+            sender_emails[Config.SISTER_EMAIL] = "sister"
+
+        expected_ids = [
+            state_mgr.state.get("last_sent_message_id"),
+            state_mgr.get_last_sent_message_id("mother"),
+            state_mgr.get_last_sent_message_id("sister"),
+        ]
+
         new_replies = email_svc.fetch_new_replies(
             last_seen_uid=last_uid,
             campaign=Config.CAMPAIGN,
-            expected_message_id=state_mgr.state.get("last_sent_message_id")
+            expected_message_id=[eid for eid in expected_ids if eid],
+            sender_emails=sender_emails
         )
 
         if new_replies:
             print(f"📩 {len(new_replies)} nouvelle(s) réponse(s) détectée(s) !")
             for reply in new_replies:
-                print(f"De {target_label} ({reply.get('date')}) : \"{reply.get('body')}\"")
+                sender_role = reply.get("sender_role", "mother")
+                sender_addr = reply.get("sender_email") or Config.TARGET_EMAIL
+                sender_label = sister_name if sender_role == "sister" else target_label
+                other_role = "mother" if sender_role == "sister" else "sister"
+                other_addr = Config.TARGET_EMAIL if other_role == "mother" else Config.SISTER_EMAIL
+                other_label = target_label if other_role == "mother" else sister_name
+
+                print(f"De {sender_label} ({reply.get('date')}) : \"{reply.get('body')}\"")
                 
                 # Analyse intelligente par Gemini
                 analysis = gemini.analyze_mother_reply(
                     state_mgr.state.get("conversation_history", []),
-                    reply.get("body", "")
+                    reply.get("body", ""),
+                    sender_role=sender_role
                 )
                 print(f"💡 Analyse Gemini : {analysis.get('summary')}")
 
@@ -135,29 +160,46 @@ def main():
                 state_mgr.record_received_email(
                     uid=reply.get("uid"),
                     content=reply.get("body"),
-                    date_iso=reply.get("date")
+                    date_iso=reply.get("date"),
+                    sender_role=sender_role
                 )
 
-                # Cas 1 : Objectif confirmé (RDV pris ou clim achetée) !
+                # Cas 1 : Objectif confirmé (RDV pris ou achat effectué) !
                 if analysis.get("appointment_booked"):
                     print(f"🎯 CONFIRMATION REÇUE ({campaign_label}) !")
                     details = analysis.get("appointment_details") or reply.get("body")
                     state_mgr.mark_appointment_booked(details)
 
-                    # Envoi d'un mot de remerciement
+                    # Envoi d'un mot de remerciement à l'expéditrice
                     thank_you_body = analysis.get("suggested_reply") or (
-                        f"Merci mille fois ! C'est super gentil.\n\n"
+                        f"Merci mille fois {sender_label} ! C'est super gentil.\n\n"
                         f"Gros bisous,\n{Config.USER_NAME}"
                     )
-                    parent_id = reply.get("message_id") or state_mgr.state.get("last_sent_message_id")
+                    parent_id = reply.get("message_id") or state_mgr.get_last_sent_message_id(sender_role)
                     email_svc.send_email(
-                        to_addr=Config.TARGET_EMAIL,
+                        to_addr=sender_addr,
                         subject=f"Re: {Config.EMAIL_SUBJECT}",
                         body_text=thank_you_body,
                         reply_to_message_id=parent_id
                     )
 
-                    # Notification pour Florent si l'email cible était maman
+                    # Prévenir l'autre personne en parallèle (ex: prévenir Maman que Julie a commandé)
+                    if has_sister and other_addr:
+                        notify_other = analysis.get("notify_other_message") or (
+                            f"Coucou {other_label},\n\n"
+                            f"Juste pour te prévenir que c'est tout bon : {sender_label} vient de commander les deux accessoires pour la clim sur Amazon !\n\n"
+                            f"Gros bisous,\n{Config.USER_NAME}"
+                        )
+                        other_parent_id = state_mgr.get_last_sent_message_id(other_role)
+                        print(f"✉️  Mise à jour parallèle envoyée à {other_label}...")
+                        email_svc.send_email(
+                            to_addr=other_addr,
+                            subject=f"Re: {Config.EMAIL_SUBJECT}",
+                            body_text=notify_other,
+                            reply_to_message_id=other_parent_id
+                        )
+
+                    # Notification pour Florent si l'email cible n'est pas Florent lui-même
                     if Config.TARGET_EMAIL != Config.GMAIL_USER:
                         email_svc.notify_user_goal_completed(details, campaign=Config.CAMPAIGN)
                     print("✅ Remerciements envoyés et confirmation enregistrée.")
@@ -167,10 +209,10 @@ def main():
                 if analysis.get("needs_reply", True):
                     reply_text = analysis.get("suggested_reply")
                     if reply_text:
-                        print(f"✉️  Envoi de la réponse adaptée à {target_label}...")
-                        parent_id = reply.get("message_id") or state_mgr.state.get("last_sent_message_id")
+                        print(f"✉️  Envoi de la réponse adaptée à {sender_label}...")
+                        parent_id = reply.get("message_id") or state_mgr.get_last_sent_message_id(sender_role)
                         msg_id = email_svc.send_email(
-                            to_addr=Config.TARGET_EMAIL,
+                            to_addr=sender_addr,
                             subject=f"Re: {Config.EMAIL_SUBJECT}",
                             body_text=reply_text,
                             reply_to_message_id=parent_id
@@ -178,13 +220,32 @@ def main():
                         state_mgr.record_sent_email(
                             subject=f"Re: {Config.EMAIL_SUBJECT}",
                             content=reply_text,
-                            message_id=msg_id
+                            message_id=msg_id,
+                            recipient_role=sender_role
                         )
+
+                # Cas 3 : Synchronisation parallèle optionnelle vers l'autre personne
+                notify_other = analysis.get("notify_other_message")
+                if has_sister and notify_other and other_addr:
+                    print(f"✉️  Synchronisation parallèle vers {other_label}...")
+                    other_parent_id = state_mgr.get_last_sent_message_id(other_role)
+                    other_msg_id = email_svc.send_email(
+                        to_addr=other_addr,
+                        subject=f"Re: {Config.EMAIL_SUBJECT}",
+                        body_text=notify_other,
+                        reply_to_message_id=other_parent_id
+                    )
+                    state_mgr.record_sent_email(
+                        subject=f"Re: {Config.EMAIL_SUBJECT}",
+                        content=notify_other,
+                        message_id=other_msg_id,
+                        recipient_role=other_role
+                    )
 
             # Fin du traitement des nouvelles réponses
             return 0
 
-    # 4. Si aucune nouvelle réponse de Maman :
+    # 4. Si aucune nouvelle réponse :
     # A) Premier email pas encore envoyé
     if not state_mgr.state.get("last_email_sent_at"):
         if now < scheduled_start_dt and not (args.immediate or is_test_mode or os.getenv("FORCE_START_NOW", "false").lower() in ("true", "1")):
@@ -201,7 +262,7 @@ def main():
                 state_mgr.state["last_seen_imap_uid"] = str(latest_uid)
                 state_mgr.save()
 
-        initial_text = gemini.generate_initial_email(is_test=is_test_mode)
+        initial_text = gemini.generate_initial_email(is_test=is_test_mode, recipient_role="mother")
         msg_id = email_svc.send_email(
             to_addr=Config.TARGET_EMAIL,
             subject=email_subject,
@@ -211,9 +272,27 @@ def main():
         state_mgr.record_sent_email(
             subject=email_subject,
             content=initial_text,
-            message_id=msg_id
+            message_id=msg_id,
+            recipient_role="mother"
         )
-        print("✅ Premier email envoyé avec succès.")
+
+        if has_sister:
+            print(f"🚀 Envoi du premier email à {sister_name} ({Config.SISTER_EMAIL})...")
+            sister_text = gemini.generate_initial_email(is_test=is_test_mode, recipient_role="sister")
+            sister_msg_id = email_svc.send_email(
+                to_addr=Config.SISTER_EMAIL,
+                subject=email_subject,
+                body_text=sister_text,
+                attachment_path=Config.ATTACHMENT_PATH or None
+            )
+            state_mgr.record_sent_email(
+                subject=email_subject,
+                content=sister_text,
+                message_id=sister_msg_id,
+                recipient_role="sister"
+            )
+
+        print("✅ Premier(s) email(s) envoyé(s) avec succès.")
         return 0
 
     # B) Premier email déjà envoyé : vérifier si 24h sans réponse
@@ -236,10 +315,11 @@ def main():
 
     reminder_text = gemini.generate_reminder_email(
         state_mgr.state.get("conversation_history", []),
-        count
+        count,
+        recipient_role="mother"
     )
 
-    parent_id = state_mgr.state.get("last_sent_message_id")
+    parent_id = state_mgr.get_last_sent_message_id("mother")
     msg_id = email_svc.send_email(
         to_addr=Config.TARGET_EMAIL,
         subject=f"Re: {Config.EMAIL_SUBJECT}",
@@ -251,9 +331,31 @@ def main():
     state_mgr.record_sent_email(
         subject=f"Re: {Config.EMAIL_SUBJECT}",
         content=reminder_text,
-        message_id=msg_id
+        message_id=msg_id,
+        recipient_role="mother"
     )
-    print(f"✅ Relance n°{count + 1} envoyée à {target_label}.")
+
+    if has_sister:
+        sister_reminder = gemini.generate_reminder_email(
+            state_mgr.state.get("conversation_history", []),
+            count,
+            recipient_role="sister"
+        )
+        sister_parent_id = state_mgr.get_last_sent_message_id("sister")
+        sister_msg_id = email_svc.send_email(
+            to_addr=Config.SISTER_EMAIL,
+            subject=f"Re: {Config.EMAIL_SUBJECT}",
+            body_text=sister_reminder,
+            reply_to_message_id=sister_parent_id
+        )
+        state_mgr.record_sent_email(
+            subject=f"Re: {Config.EMAIL_SUBJECT}",
+            content=sister_reminder,
+            message_id=sister_msg_id,
+            recipient_role="sister"
+        )
+
+    print(f"✅ Relance n°{count + 1} envoyée.")
     return 0
 
 if __name__ == "__main__":

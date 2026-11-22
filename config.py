@@ -8,6 +8,8 @@ class Config:
     GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "").strip().replace(" ", "")
     TARGET_EMAIL = os.getenv("TARGET_EMAIL", "").strip() or os.getenv("MOTHER_EMAIL", "").strip()
     MOTHER_EMAIL = os.getenv("MOTHER_EMAIL", "").strip()
+    SISTER_EMAIL = os.getenv("SISTER_EMAIL", "").strip()
+    SISTER_NAME = os.getenv("SISTER_NAME", "Julie").strip()
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
     
     USER_NAME = os.getenv("USER_NAME", "Florent").strip()
@@ -28,6 +30,10 @@ class Config:
         _DEFAULT_SUBJECT = "Climatiseur mobile pour ma chambre cet été"
         _DEFAULT_STATE_FILE = "data/clim_state.json"
         _DEFAULT_ATTACHMENT = "assets/clim_valberg.png"
+    elif CAMPAIGN == "accessoires_clim":
+        _DEFAULT_SUBJECT = "Accessoires pour installer la clim (tuyau + kit fenêtre)"
+        _DEFAULT_STATE_FILE = "data/accessoires_clim_state.json"
+        _DEFAULT_ATTACHMENT = "assets/clim_tuyau.png,assets/clim_isolation_fenetre.png"
     elif CAMPAIGN == "dentiste":
         _DEFAULT_SUBJECT = f"Rendez-vous dentiste pour {USER_NAME}"
         _DEFAULT_STATE_FILE = "data/dentiste_state.json"

@@ -69,30 +69,43 @@ class StateManager:
             self.state["appointment_details"] = details
         self.save()
 
-    def record_sent_email(self, subject, content, message_id=None):
+    def record_sent_email(self, subject, content, message_id=None, recipient_role=None):
         now_iso = self.get_current_time().isoformat()
         self.state["last_email_sent_at"] = now_iso
         if message_id:
             self.state["last_sent_message_id"] = message_id
+            if recipient_role:
+                ids_map = self.state.setdefault("last_sent_message_ids", {})
+                ids_map[recipient_role] = message_id
         
-        # If this is a reminder (not the initial email and not a direct reply)
-        # Note: caller will increment reminder_count as appropriate
-        self.state["conversation_history"].append({
+        entry = {
             "role": "user",
             "timestamp": now_iso,
             "subject": subject,
             "content": content
-        })
+        }
+        if recipient_role:
+            entry["recipient_role"] = recipient_role
+        self.state["conversation_history"].append(entry)
         self.save()
 
-    def record_received_email(self, uid, content, date_iso=None):
+    def get_last_sent_message_id(self, recipient_role=None):
+        if recipient_role:
+            ids_map = self.state.get("last_sent_message_ids", {})
+            if ids_map.get(recipient_role):
+                return ids_map.get(recipient_role)
+        return self.state.get("last_sent_message_id")
+
+    def record_received_email(self, uid, content, date_iso=None, sender_role="mother"):
         if not date_iso:
             date_iso = self.get_current_time().isoformat()
         self.state["last_email_received_at"] = date_iso
         if uid:
-            self.state["last_seen_imap_uid"] = str(uid)
+            prev_uid = self.state.get("last_seen_imap_uid")
+            if not prev_uid or int(uid) > int(prev_uid):
+                self.state["last_seen_imap_uid"] = str(uid)
         self.state["conversation_history"].append({
-            "role": "mother",
+            "role": sender_role or "mother",
             "timestamp": date_iso,
             "content": content
         })

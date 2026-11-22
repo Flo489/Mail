@@ -24,6 +24,22 @@ Motif du rendez-vous chez le dentiste pour Florent :
 - Choix du dentiste : pas de dentiste précis imposé, une consultation classique chez un dentiste disponible conviendra très bien.
 """.strip()
 
+ACCESSOIRES_CLIM_CONTEXT = """
+Les 2 accessoires complémentaires pour installer le climatiseur mobile (chez Amazon) :
+1) Tuyau d'échappement de climatiseur universel (marque equlup, filet CCW) :
+   - Dimensions : 3 mètres de long (3.28 yd), 150 mm de diamètre
+   - Prix : 24,03 € (livraison et retours gratuits, expédié par Amazon)
+   - Lien Amazon : https://www.amazon.fr/dp/B0GYZ1RZSF?th=1
+2) Tissu d'isolation pour fenêtre à pivot central HOOMEE (kit calfeutrage fenêtre) :
+   - Dimensions : périmètre de 381 cm à 460 cm (taille sélectionnée : 2x 230 cm), adapté à toutes les unités mobiles de climatisation
+   - Note client : 4,2 / 5 (1 641 avis)
+   - Prix : 33,99 € (livraison et retours gratuits, expédié par Amazon)
+   - Lien Amazon : https://www.amazon.fr/HOOMEE-dIsolation-P%C3%A9rim%C3%A8tre-Climatiseur-S%C3%A8che-Linge/dp/B08336NZKX?th=1
+Total des 2 articles : 58,02 €.
+Pourquoi : indispensables pour évacuer l'air chaud dehors par la fenêtre sans laisser rentrer la chaleur l'été (plus de 30°C dans la chambre).
+Les deux captures d'écran Amazon sont jointes au premier email.
+""".strip()
+
 class GeminiClient:
     def __init__(self, api_key=None, campaign=None):
         self.api_key = api_key or Config.GEMINI_API_KEY
@@ -88,21 +104,22 @@ class GeminiClient:
             text = re.sub(r"\s*```$", "", text)
         return json.loads(text.strip())
 
-    def analyze_mother_reply(self, history, new_reply_text):
+    def analyze_mother_reply(self, history, new_reply_text, sender_role="mother"):
         """
-        Analyzes mother's reply.
+        Analyzes mother's (or sister's) reply.
         Returns a dict:
         {
             "appointment_booked": bool,
             "appointment_details": str or None,
             "summary": str,
             "needs_reply": bool,
-            "suggested_reply": str
+            "suggested_reply": str,
+            "notify_other_message": str or None
         }
         """
         history_formatted = "\n".join([
             f"- [{h.get('role', 'inconnu').upper()} à {h.get('timestamp', '')}]: {h.get('content', '')}"
-            for h in history[-6:]
+            for h in history[-8:]
         ])
 
         if self.campaign == "clim":
@@ -140,6 +157,50 @@ Réponds STRICTEMENT sous ce format JSON :
   "summary": "...",
   "needs_reply": true,
   "suggested_reply": "..."
+}}
+"""
+        elif self.campaign == "accessoires_clim":
+            sister_name = Config.SISTER_NAME or "Julie"
+            sender_label = sister_name if sender_role == "sister" else "Maman"
+            other_label = "Maman" if sender_role == "sister" else sister_name
+            system_instruction = (
+                f"Tu es un assistant personnel qui aide {Config.USER_NAME} à échanger par email séparément avec sa maman ('Maman') "
+                f"et sa sœur ('{sister_name}', qui fait les commandes sur internet) pour l'achat des 2 accessoires de la clim sur Amazon.\n"
+                "Les messages doivent être TRÈS NATURELS, chaleureux, spontanés et familiaux (pas du tout robotiques). "
+                f"Florent tutoie sa maman ('Maman') et sa sœur ('{sister_name}')."
+            )
+            prompt = f"""
+Voici l'historique des derniers échanges (avec Maman et {sister_name}) :
+{history_formatted}
+
+Voici le NOUVEAU message reçu de **{sender_label}** :
+\"\"\"{new_reply_text}\"\"\"
+
+Contexte des 2 articles souhaités :
+{ACCESSOIRES_CLIM_CONTEXT}
+
+Consignes strictes :
+1. "appointment_booked" : mets TRUE UNIQUEMENT si {sender_label} affirme clairement que les 2 articles ont été achetés/commandés (ex: "c'est bon je les ai commandés", "j'ai acheté les deux sur Amazon"). Si elle dit qu'elle va regarder, qu'elle attend l'accord de Maman, qu'elle hésite, ou qu'elle pose une question, mets FALSE.
+2. "appointment_details" : si l'achat est confirmé, extrais les infos (date de livraison, etc.). Sinon null.
+3. "summary" : résumé court en 1 phrase de ce que dit {sender_label}.
+4. "needs_reply" : true si sa réponse appelle une réponse de Florent.
+5. "suggested_reply" : rédige un email complet en français, naturel, spontané et chaleureux adressé directement à {sender_label}, signé '{Config.USER_NAME}'.
+   - Si {sender_label} a commandé les 2 articles : remercie-la chaleureusement ("Merci mille fois {sender_label} ! Avec ça la clim sera au top cet été...").
+   - Si {sender_label} pose une question (taille, diamètre, prix, liens, fenêtre) : réponds précisément et simplement avec les infos + liens du contexte.
+   - Si {sender_label} dit qu'elle va le faire plus tard : rassure-la gentiment ("Pas de souci {sender_label}, prends ton temps...").
+6. "notify_other_message" : un message naturel et court adressé à **{other_label}** pour la tenir au courant en parallèle, UNIQUEMENT si c'est utile :
+   - Si "appointment_booked" est TRUE (par ex. {sister_name} vient de commander) : OBLIGATOIRE, écris un message naturel à {other_label} pour lui dire que c'est tout bon et que {sender_label} vient de commander les 2 accessoires (ex: "Coucou {other_label}, juste pour te dire que c'est bon, {sender_label} vient de commander le tuyau et le kit fenêtre sur Amazon ! Gros bisous, {Config.USER_NAME}").
+   - Si Maman donne son feu vert pour que {sister_name} commande (ex: "c'est bon dis à Julie de commander") ou si {sister_name} dit qu'elle attend la validation de Maman : écris un petit message naturel à {other_label} pour faire le lien !
+   - Sinon (simple question technique) : mets null.
+
+Réponds STRICTEMENT sous ce format JSON :
+{{
+  "appointment_booked": false,
+  "appointment_details": null,
+  "summary": "...",
+  "needs_reply": true,
+  "suggested_reply": "...",
+  "notify_other_message": null
 }}
 """
         elif self.campaign == "dentiste":
@@ -218,17 +279,17 @@ Réponds STRICTEMENT sous ce format JSON :
 }}
 """
         if not self.api_key:
-            return self._fallback_analyze(new_reply_text)
+            return self._fallback_analyze(new_reply_text, sender_role=sender_role)
 
         try:
             raw = self._call_gemini(prompt, system_instruction=system_instruction, json_mode=True)
             return self.clean_json_response(raw)
         except Exception as e:
             print(f"[GeminiClient] Erreur pendant l'analyse Gemini: {e}. Utilisation du fallback heuristique.")
-            return self._fallback_analyze(new_reply_text)
+            return self._fallback_analyze(new_reply_text, sender_role=sender_role)
 
-    def generate_reminder_email(self, history, reminder_count):
-        """Generates a gentle follow-up reminder email when mother hasn't answered for 24h."""
+    def generate_reminder_email(self, history, reminder_count, recipient_role="mother"):
+        """Generates a gentle follow-up reminder email when recipient hasn't answered for 24h."""
         if self.campaign == "clim":
             system_instruction = (
                 f"Tu rédiges un email de relance de la part de {Config.USER_NAME} à sa maman ('Maman').\n"
@@ -245,6 +306,28 @@ Contexte produit :
 - Relance 1 : simple rappel doux et gentil ("Coucou maman, juste un petit mot pour savoir si tu as pu jeter un œil à la clim chez Electro Dépôt...").
 - Relance 2 : tendre, compréhension de son emploi du temps chargé, petit clin d'œil aux +30°C dans la chambre en été.
 - Relance 3+ : avec un brin d'humour bienveillant (ex: "c'est encore moi et ma survie face aux 30°C dans ma chambre haha ! Promis dès que c'est commandé je te laisse tranquille...").
+
+Réponds uniquement avec le texte complet du message (pas de JSON, pas de balises markdown).
+"""
+        elif self.campaign == "accessoires_clim":
+            sister_name = Config.SISTER_NAME or "Julie"
+            dest_label = sister_name if recipient_role == "sister" else "Maman"
+            rel_desc = f"sa sœur ('{sister_name}')" if recipient_role == "sister" else "sa maman ('Maman')"
+            system_instruction = (
+                f"Tu rédiges un email de relance très naturel, spontané et chaleureux de la part de {Config.USER_NAME} à {rel_desc}.\n"
+                "C'est pour lui rappeler gentiment l'achat des 2 accessoires de la clim sur Amazon (tuyau 3m 150mm à 24,03 € + kit isolation fenêtre HOOMEE 2x230cm à 33,99 €)."
+            )
+            prompt = f"""
+C'est la relance numéro {reminder_count + 1} adressée à {dest_label}.
+Contexte des 2 articles :
+{ACCESSOIRES_CLIM_CONTEXT}
+
+Écris un message court, très naturel et familier en français (pas robotique), tutoyant {dest_label}, signé '{Config.USER_NAME}'.
+- Si c'est pour {sister_name} : rappelle-lui gentiment les deux liens Amazon si elle a deux minutes pour commander (avec l'accord de Maman).
+- Si c'est pour Maman : demande-lui gentiment si elle a pu voir avec {sister_name} pour les deux accessoires sur Amazon.
+- Relance 1 : simple rappel doux.
+- Relance 2 : compréhension de son emploi du temps.
+- Relance 3+ : petite touche d'humour bienveillante ("c'est encore moi et mon kit anti-canicule haha...").
 
 Réponds uniquement avec le texte complet du message (pas de JSON, pas de balises markdown).
 """
@@ -279,17 +362,17 @@ C'est la relance numéro {reminder_count + 1} (environ {(reminder_count + 1) * 2
 Réponds uniquement avec le texte du message (pas de JSON, pas de balises markdown).
 """
         if not self.api_key:
-            return self._fallback_reminder(reminder_count)
+            return self._fallback_reminder(reminder_count, recipient_role=recipient_role)
 
         try:
             text = self._call_gemini(prompt, system_instruction=system_instruction, json_mode=False)
             return text.strip()
         except Exception as e:
             print(f"[GeminiClient] Erreur génération relance Gemini: {e}. Utilisation du fallback.")
-            return self._fallback_reminder(reminder_count)
+            return self._fallback_reminder(reminder_count, recipient_role=recipient_role)
 
-    def generate_initial_email(self, is_test=False):
-        """Generates the very first email sent to mom."""
+    def generate_initial_email(self, is_test=False, recipient_role="mother"):
+        """Generates the very first email sent to mom (or sister)."""
         if is_test:
             recipient_label = "Florent" if "sauvageflorent.pro" in Config.TARGET_EMAIL else "Maman"
             return (
@@ -335,6 +418,73 @@ Consignes :
                 return text.strip()
             except Exception:
                 return fallback_clim
+
+        if self.campaign == "accessoires_clim":
+            sister_name = Config.SISTER_NAME or "Julie"
+            tuyau_url = "https://www.amazon.fr/dp/B0GYZ1RZSF?th=1"
+            kit_url = "https://www.amazon.fr/HOOMEE-dIsolation-P%C3%A9rim%C3%A8tre-Climatiseur-S%C3%A8che-Linge/dp/B08336NZKX?th=1"
+            if recipient_role == "sister":
+                fallback_acc = (
+                    f"Coucou {sister_name},\n\n"
+                    f"J'espère que tu vas bien et que tu as passé de bonnes fêtes ! Je voulais attendre que Noël soit passé pour ne pas vous embêter avec ça avant.\n\n"
+                    f"Comme c'est toi qui gères les commandes sur internet, est-ce que tu pourrais commander (avec Maman) les deux petits accessoires sur Amazon pour que je puisse installer ma clim dans ma chambre ?\n\n"
+                    f"1) Le tuyau d'échappement equlup (3m, 150 mm de diamètre, filet CCW) — 24,03 € :\n{tuyau_url}\n\n"
+                    f"2) Le tissu d'isolation pour fenêtre à pivot central HOOMEE (périmètre 381-460 cm, taille 2x 230 cm) — 33,99 € :\n{kit_url}\n\n"
+                    f"Ça fait 58,02 € au total (livraison et retours gratuits). Je te mets aussi les captures en dessous pour que tu voies bien les options sélectionnées. J'ai aussi envoyé un mail à Maman pour la mettre au courant.\n\n"
+                    f"Merci d'avance ! Dis-moi quand c'est bon ou si tu as un doute,\n"
+                    f"{Config.USER_NAME}"
+                )
+            else:
+                fallback_acc = (
+                    f"Coucou Maman,\n\n"
+                    f"J'espère que tu vas bien et que tu as passé de bonnes fêtes ! Je voulais attendre après Noël pour ne pas te déranger avec ça avant.\n\n"
+                    f"Pour que le climatiseur mobile fonctionne bien dans ma chambre cet été (et éviter les +30°C), il faudrait deux petits accessoires complémentaires sur Amazon (je les ai aussi envoyés à {sister_name} comme c'est elle qui commande sur internet) :\n"
+                    f"1) Tuyau d'échappement equlup (3m, 150 mm de diamètre) à 24,03 € :\n{tuyau_url}\n\n"
+                    f"2) Tissu d'isolation pour fenêtre à pivot central HOOMEE (taille 2x 230 cm) à 33,99 € :\n{kit_url}\n\n"
+                    f"Soit 58,02 € au total avec livraison et retours gratuits sur Amazon (je te mets les deux captures juste en dessous).\n\n"
+                    f"Dis-moi ce que tu en penses quand tu auras un moment !\n\n"
+                    f"Gros bisous,\n"
+                    f"{Config.USER_NAME}"
+                )
+            if not self.api_key:
+                return fallback_acc
+
+            if recipient_role == "sister":
+                prompt = f"""
+Rédige un email TRÈS NATUREL, chaleureux et fraternel de la part de {Config.USER_NAME} à sa sœur {sister_name} pour lui demander de commander (comme c'est elle qui fait les achats sur internet) 2 accessoires pour la clim sur Amazon (envoyé fin janvier après les fêtes de Noël).
+
+Voici les infos exactes et les liens à inclure OBLIGATOIREMENT tels quels dans le message :
+{ACCESSOIRES_CLIM_CONTEXT}
+
+Consignes :
+- Ton naturel, simple, pas robotique, comme un vrai message de frère à sa sœur ('Coucou {sister_name}').
+- Explique que tu as attendu après Noël pour ne pas déranger avec ça avant, et que tu as aussi prévenu Maman par mail.
+- Inclus les DEUX liens Amazon exacts ({tuyau_url} et {kit_url}) avec les noms et prix (24,03 € et 33,99 €, total 58,02 €).
+- Mentionne que les 2 captures d'écran sont jointes pour bien voir les options sélectionnées (150mm et 2x 230cm).
+- Signé '{Config.USER_NAME}'.
+- Réponds uniquement avec le texte du message.
+"""
+            else:
+                prompt = f"""
+Rédige un email TRÈS NATUREL, affectueux et attentionné de la part de {Config.USER_NAME} à sa maman ('Maman') pour lui parler des 2 accessoires à acheter sur Amazon pour la clim (envoyé fin janvier après les fêtes de Noël).
+
+Voici les infos exactes et les liens à inclure OBLIGATOIREMENT tels quels dans le message :
+{ACCESSOIRES_CLIM_CONTEXT}
+
+Consignes :
+- Ton naturel, affectueux, pas robotique, tutoyant sa maman ('Coucou Maman').
+- Dis-lui que tu as attendu après Noël pour ne pas la déranger avec ça avant.
+- Précise que tu as aussi envoyé les liens à {sister_name} comme c'est elle qui gère les commandes sur internet.
+- Inclus les DEUX liens Amazon exacts ({tuyau_url} et {kit_url}) avec les prix (24,03 € et 33,99 €, total 58,02 €).
+- Mentionne que les 2 captures d'écran sont jointes dans le mail.
+- Signé '{Config.USER_NAME}'.
+- Réponds uniquement avec le texte du message.
+"""
+            try:
+                text = self._call_gemini(prompt, json_mode=False)
+                return text.strip()
+            except Exception:
+                return fallback_acc
 
         if self.campaign == "dentiste":
             fallback_dentiste = (
@@ -402,9 +552,59 @@ Réponds uniquement avec le texte du message.
                 f"{Config.USER_NAME}"
             )
 
-    def _fallback_analyze(self, text):
+    def _fallback_analyze(self, text, sender_role="mother"):
         """Heuristic analysis if Gemini is unreachable or no key provided."""
         t = text.lower()
+        if self.campaign == "accessoires_clim":
+            sister_name = Config.SISTER_NAME or "Julie"
+            sender_label = sister_name if sender_role == "sister" else "Maman"
+            other_label = "Maman" if sender_role == "sister" else sister_name
+
+            is_bought = any(phrase in t for phrase in [
+                "c'est commandé", "je les ai commandé", "je les ai commandés",
+                "j'ai commandé", "je les ai acheté", "je les ai achetés", "j'ai acheté",
+                "c'est acheté", "c'est pris", "c'est bon", "c'est fait"
+            ]) and not any(neg in t for neg in ["pas encore", "pas eu le temps", "j'ai pas", "peux pas", "trop cher"])
+
+            if is_bought:
+                return {
+                    "appointment_booked": True,
+                    "appointment_details": text.strip(),
+                    "summary": f"{sender_label} confirme l'achat/commande des accessoires clim.",
+                    "needs_reply": True,
+                    "suggested_reply": f"Merci mille fois {sender_label} ! Avec ça la clim sera vraiment au top pour cet été.\n\nGros bisous,\n{Config.USER_NAME}",
+                    "notify_other_message": (
+                        f"Coucou {other_label},\n\n"
+                        f"Juste pour te prévenir que c'est tout bon : {sender_label} vient de commander les deux accessoires pour la clim sur Amazon !\n\n"
+                        f"Gros bisous,\n{Config.USER_NAME}"
+                    )
+                }
+
+            if any(w in t for w in ["prix", "combien", "taille", "diamètre", "diametre", "fenêtre", "fenetre", "tuyau"]):
+                return {
+                    "appointment_booked": False,
+                    "appointment_details": None,
+                    "summary": f"{sender_label} demande des précisions sur les accessoires clim.",
+                    "needs_reply": True,
+                    "suggested_reply": (
+                        f"Coucou {sender_label},\n\n"
+                        f"Les deux articles sont sur Amazon (58,02 € au total, retours gratuits) :\n"
+                        f"- Tuyau d'échappement equlup 3m (150 mm de diamètre, filet CCW) : 24,03 €\n"
+                        f"- Tissu d'isolation fenêtre HOOMEE (périmètre 381-460 cm, taille 2x 230 cm) : 33,99 €\n\n"
+                        f"Gros bisous,\n{Config.USER_NAME}"
+                    ),
+                    "notify_other_message": None
+                }
+
+            return {
+                "appointment_booked": False,
+                "appointment_details": None,
+                "summary": f"{sender_label} a répondu sans confirmer l'achat des accessoires clim.",
+                "needs_reply": True,
+                "suggested_reply": f"Merci {sender_label} ! Pas de souci, tiens-moi au courant quand tu auras pu regarder pour le tuyau et le kit fenêtre.\n\nGros bisous,\n{Config.USER_NAME}",
+                "notify_other_message": None
+            }
+
         if self.campaign == "clim":
             is_bought = any(phrase in t for phrase in [
                 "c'est commandé", "je l'ai commandé", "je l'ai commandée",
@@ -476,7 +676,34 @@ Réponds uniquement avec le texte du message.
             "suggested_reply": f"Merci Maman ! Pas de souci, tiens-moi au courant quand tu as un moment.\n\nGros bisous,\n{Config.USER_NAME}"
         }
 
-    def _fallback_reminder(self, count):
+    def _fallback_reminder(self, count, recipient_role="mother"):
+        if self.campaign == "accessoires_clim":
+            sister_name = Config.SISTER_NAME or "Julie"
+            dest_label = sister_name if recipient_role == "sister" else "Maman"
+            if count == 0:
+                return (
+                    f"Coucou {dest_label},\n\n"
+                    f"J'espère que tu passes une bonne journée ! Petit rappel tout doux pour savoir si tu as eu le temps de regarder "
+                    f"les 2 accessoires pour la clim sur Amazon (le tuyau 3m 150mm à 24,03 € et le kit fenêtre HOOMEE à 33,99 €) ?\n\n"
+                    f"Gros bisous,\n"
+                    f"{Config.USER_NAME}"
+                )
+            elif count == 1:
+                return (
+                    f"Coucou {dest_label},\n\n"
+                    f"Je sais que tes journées sont bien remplies ! Juste un petit mémo pour le tuyau et le tissu d'isolation fenêtre sur Amazon "
+                    f"quand tu auras deux minutes, histoire d'être prêt pour la clim cet été.\n\n"
+                    f"Bonne journée, gros bisous !\n"
+                    f"{Config.USER_NAME}"
+                )
+            else:
+                return (
+                    f"Coucou {dest_label},\n\n"
+                    f"C'est encore moi et mon kit de survie anti-canicule haha ! Promis, dès que le tuyau et le kit fenêtre sont commandés je ne t'embête plus avec ça :)\n\n"
+                    f"Bon courage pour ta journée, bisous !\n"
+                    f"{Config.USER_NAME}"
+                )
+
         if self.campaign == "clim":
             if count == 0:
                 return (

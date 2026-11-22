@@ -147,6 +147,47 @@ class TestMailBot(unittest.TestCase):
         self.assertTrue(svc._matches_campaign("Re: Climatiseur mobile pour ma chambre cet été", "", "", campaign="clim"))
         self.assertFalse(svc._matches_campaign("Re: Rendez-vous dentiste pour Florent", "", "", campaign="clim"))
         self.assertTrue(svc._matches_campaign("Nouveau message", "<msg-123@gmail.com>", "", campaign="dentiste", expected_message_id="<msg-123@gmail.com>"))
+        self.assertTrue(svc._matches_campaign("Re: Accessoires pour installer la clim (tuyau + kit fenêtre)", "", "", campaign="accessoires_clim"))
+        self.assertFalse(svc._matches_campaign("Re: Accessoires pour installer la clim (tuyau + kit fenêtre)", "", "", campaign="clim"))
+        self.assertFalse(svc._matches_campaign("Re: Climatiseur mobile pour ma chambre cet été", "", "", campaign="accessoires_clim"))
+
+    def test_accessoires_clim_fallback_initial_and_reminders(self):
+        gemini = GeminiClient(campaign="accessoires_clim")
+        gemini.api_key = ""
+        initial_mom = gemini.generate_initial_email(is_test=False, recipient_role="mother")
+        self.assertIn("24,03", initial_mom)
+        self.assertIn("33,99", initial_mom)
+        self.assertIn("58,02", initial_mom)
+        self.assertIn("HOOMEE", initial_mom)
+        self.assertIn("https://www.amazon.fr/dp/B0GYZ1RZSF?th=1", initial_mom)
+
+        initial_sis = gemini.generate_initial_email(is_test=False, recipient_role="sister")
+        self.assertIn("Julie", initial_sis)
+        self.assertIn("https://www.amazon.fr/dp/B0GYZ1RZSF?th=1", initial_sis)
+        self.assertIn("https://www.amazon.fr/HOOMEE", initial_sis)
+
+        rem0 = gemini._fallback_reminder(0, recipient_role="sister")
+        rem1 = gemini._fallback_reminder(1, recipient_role="mother")
+        rem2 = gemini._fallback_reminder(2, recipient_role="sister")
+        self.assertIn("Julie", rem0)
+        self.assertIn("tissu d'isolation", rem1)
+        self.assertIn("haha", rem2)
+
+        bought = gemini._fallback_analyze("C'est bon, je les ai commandés sur Amazon !", sender_role="sister")
+        self.assertTrue(bought["appointment_booked"])
+        self.assertIn("Julie", bought["suggested_reply"])
+        self.assertIsNotNone(bought["notify_other_message"])
+        self.assertIn("Maman", bought["notify_other_message"])
+        self.assertIn("Julie", bought["notify_other_message"])
+
+        question = gemini._fallback_analyze("Quel diamètre pour le tuyau ?", sender_role="sister")
+        self.assertFalse(question["appointment_booked"])
+        self.assertIn("150 mm", question["suggested_reply"])
+
+        self.state_mgr.record_sent_email("Sujet", "Msg Maman", "<m1@gmail.com>", recipient_role="mother")
+        self.state_mgr.record_sent_email("Sujet", "Msg Julie", "<s1@gmail.com>", recipient_role="sister")
+        self.assertEqual(self.state_mgr.get_last_sent_message_id("mother"), "<m1@gmail.com>")
+        self.assertEqual(self.state_mgr.get_last_sent_message_id("sister"), "<s1@gmail.com>")
 
 if __name__ == "__main__":
     unittest.main()
