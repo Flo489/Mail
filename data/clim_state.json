@@ -3,11 +3,11 @@
   "appointment_booked": false,
   "appointment_details": null,
   "scheduled_start_at": "2026-11-21T16:55:42.090293+01:00",
-  "last_email_sent_at": "2026-11-21T19:18:39.806491+01:00",
+  "last_email_sent_at": "2026-11-22T20:27:23.466980+01:00",
   "last_email_received_at": null,
-  "last_sent_message_id": "<179528511833.2515.12976970801045981503@gmail.com>",
+  "last_sent_message_id": "<179537564066.2438.4835315885781232860@gmail.com>",
   "last_seen_imap_uid": "25551",
-  "reminder_count": 2,
+  "reminder_count": 3,
   "conversation_history": [
     {
       "role": "user",
@@ -26,6 +26,16 @@
       "timestamp": "2026-11-21T19:18:39.806491+01:00",
       "subject": "Re: Climatiseur mobile pour ma chambre cet été",
       "content": "Coucou maman,\n\nJ'espère que tu vas bien et que tu n'es pas trop débordée en ce moment ! \n\nJe me permets de te repasser un tout petit mot concernant le climatiseur Valberg (tu sais, celui à 219,98 € chez Electro Dépôt avec le paiement en 3x si ça arrange). Je sais que tu as un emploi du temps bien chargé, donc ne t'en fais pas. \n\nC'est juste que j'anticipe un peu pour cet été : ma chambre se transforme en véritable sauna avec plus de 30°C pendant des jours, donc ce petit appareil me sauverait littéralement la vie ! Il est dispo en drive 1h à Hénin-Beaumont si jamais c'est plus simple.\n\nBisous, prends bien soin de toi,\n\nFlorent"
+    },
+    {
+      "role": "user",
+      "timestamp": "2026-11-22T20:27:23.466980+01:00",
+      "subject": "Re: Climatiseur mobile pour ma chambre cet été",
+      "content": "Coucou Maman,\n\nC'est encore moi et ma survie face aux 30°C dans ma chambre haha ! Promis, c'est ma dernière relance et après je te laisse tranquille avec ça.\n\nJe te remets les infos si jamais c'est passé à la trappe dans tes notifications : c'est le climatiseur VALBERG 9000 BTU chez Electro Dépôt à 219,98 € (ils font même le 3x sans frais si ça arrange, soit 3 fois un peu plus de 73 €). Il est dispo en drive 1h à Hénin-Beaumont ou en livraison. \n\nDis-moi juste si tu as besoin d'un coup de main pour valider tout ça ou si c'est bon !\n\nGros bisous,\n\nFlorent",
+      "recipient_role": "mother"
     }
-  ]
+  ],
+  "last_sent_message_ids": {
+    "mother": "<179537564066.2438.4835315885781232860@gmail.com>"
+  }
 }

@@ -3,17 +3,27 @@
   "appointment_booked": false,
   "appointment_details": null,
   "scheduled_start_at": "2026-11-21T16:55:54.458867+01:00",
-  "last_email_sent_at": "2026-11-21T16:56:28.391317+01:00",
+  "last_email_sent_at": "2026-11-22T20:27:31.676445+01:00",
   "last_email_received_at": null,
-  "last_sent_message_id": "<179527658738.2486.10692901515435376512@gmail.com>",
+  "last_sent_message_id": "<179537564974.2441.2639914036080445265@gmail.com>",
   "last_seen_imap_uid": "25607",
-  "reminder_count": 0,
+  "reminder_count": 1,
   "conversation_history": [
     {
       "role": "user",
       "timestamp": "2026-11-21T16:56:28.391317+01:00",
       "subject": "Rendez-vous dentiste pour Florent",
       "content": "Coucou Maman,\n\nJ'espère que tu vas bien ! Je voulais te demander si tu pouvais me prendre un rendez-vous chez le dentiste quand tu auras un petit moment.\n\nRien d'urgent ni de grave, ne t'inquiète pas : j'ai juste remarqué récemment de petites traces brunâtres à grisâtres en surface sur le bord inférieur des deux incisives du haut (et plus discrètement sur celles du bas). D'après ce que j'ai regardé, ça correspond très probablement à une coloration superficielle bénigne (due à des pigments alimentaires, un produit d'hygiène ou un assèchement passager de l'émail), et non à une atteinte profonde.\n\nJe vais garder un brossage doux normal pendant 2 à 3 semaines en évitant les produits abrasifs (bicarbonate, citron, dentifrice blancheur), mais si ça ne s'estompe pas d'ici là ou si une sensibilité apparaît, une consultation classique permettra de les enlever facilement avec un simple polissage.\n\nTiens-moi au courant quand tu as pu voir pour le rendez-vous ou si tu as besoin de mes disponibilités !\n\nGros bisous,\nFlorent"
+    },
+    {
+      "role": "user",
+      "timestamp": "2026-11-22T20:27:31.676445+01:00",
+      "subject": "Re: Rendez-vous dentiste pour Florent",
+      "content": "Coucou maman,\n\nJuste un petit mot doux pour savoir si tu as pu regarder pour prendre ton rendez-vous chez le dentiste. \n\nRien d'urgent ni de grave, c'est juste pour faire le point et",
+      "recipient_role": "mother"
     }
-  ]
+  ],
+  "last_sent_message_ids": {
+    "mother": "<179537564974.2441.2639914036080445265@gmail.com>"
+  }
 }
