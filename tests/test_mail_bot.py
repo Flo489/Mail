@@ -189,5 +189,46 @@ class TestMailBot(unittest.TestCase):
         self.assertEqual(self.state_mgr.get_last_sent_message_id("mother"), "<m1@gmail.com>")
         self.assertEqual(self.state_mgr.get_last_sent_message_id("sister"), "<s1@gmail.com>")
 
+    def test_gemini_skips_truncated_max_tokens_response(self):
+        from unittest.mock import patch
+        import io, json
+
+        truncated_resp = json.dumps({
+            "candidates": [{
+                "finishReason": "MAX_TOKENS",
+                "content": {"parts": [{"text": "Coucou maman, c'est juste pour faire le point et"}]}
+            }]
+        }).encode("utf-8")
+
+        complete_resp = json.dumps({
+            "candidates": [{
+                "finishReason": "STOP",
+                "content": {"parts": [{"text": "Coucou maman, message complet !\n\nBisous,\nFlorent"}]}
+            }]
+        }).encode("utf-8")
+
+        class FakeResp:
+            def __init__(self, data):
+                self._data = data
+            def read(self):
+                return self._data
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                pass
+
+        calls = []
+        def fake_urlopen(req, timeout=30):
+            calls.append(req.full_url)
+            if len(calls) == 1:
+                return FakeResp(truncated_resp)
+            return FakeResp(complete_resp)
+
+        gemini = GeminiClient(api_key="fake-key", campaign="dentiste")
+        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            res = gemini._call_gemini("test prompt")
+        self.assertEqual(len(calls), 2)
+        self.assertIn("message complet !", res)
+
 if __name__ == "__main__":
     unittest.main()

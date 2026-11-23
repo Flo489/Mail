@@ -66,7 +66,7 @@ class GeminiClient:
                 ],
                 "generationConfig": {
                     "temperature": 0.4,
-                    "maxOutputTokens": 2048,
+                    "maxOutputTokens": 8192,
                 }
             }
             
@@ -84,7 +84,16 @@ class GeminiClient:
             try:
                 with urllib.request.urlopen(req, timeout=30) as response:
                     data = json.loads(response.read().decode("utf-8"))
-                    text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    candidate = data["candidates"][0]
+                    finish_reason = candidate.get("finishReason", "STOP")
+                    if finish_reason == "MAX_TOKENS":
+                        print(f"[GeminiClient] Modèle {model_name} tronqué (MAX_TOKENS). Passage au suivant.")
+                        continue
+                    parts = candidate.get("content", {}).get("parts", [])
+                    text = "".join(p.get("text", "") for p in parts if not p.get("thought"))
+                    if not text.strip():
+                        print(f"[GeminiClient] Modèle {model_name} a renvoyé un texte vide (finishReason={finish_reason}).")
+                        continue
                     return text
             except urllib.error.HTTPError as e:
                 err_body = e.read().decode("utf-8", errors="ignore")
@@ -335,12 +344,13 @@ Réponds uniquement avec le texte complet du message (pas de JSON, pas de balise
             system_instruction = (
                 f"Tu rédiges un email de relance de la part de {Config.USER_NAME} à sa maman ('Maman').\n"
                 "Le ton doit être doux, affectueux, rassurant, sans pression mais efficace. C'est pour lui rappeler "
-                "de prendre un rendez-vous classique chez le dentiste (pour vérifier/polir les petites traces superficielles sur les incisives)."
+                "de prendre un rendez-vous classique chez le dentiste POUR FLORENT (pour vérifier/polir les petites traces superficielles sur ses incisives)."
             )
             prompt = f"""
 C'est la relance numéro {reminder_count + 1} (environ {(reminder_count + 1) * 24}h se sont écoulées sans réponse).
 Écris un message court, affectueux et naturel en français, signé '{Config.USER_NAME}'.
-- Relance 1 : simple rappel doux et gentil ("Coucou maman, juste un petit mot pour savoir si tu as pu regarder pour le dentiste...").
+IMPORTANT : Le rendez-vous est POUR FLORENT (écris bien "mon rendez-vous" ou "un rendez-vous pour moi", JAMAIS "ton rendez-vous").
+- Relance 1 : simple rappel doux et gentil ("Coucou maman, juste un petit mot pour savoir si tu as pu regarder pour mon rendez-vous chez le dentiste...").
 - Relance 2 : tendre, compréhension de son emploi du temps chargé, en rappelant que ce n'est rien de grave mais qu'il vaut mieux caler un créneau si besoin d'un polissage.
 - Relance 3+ : avec un brin d'humour bienveillant ("Coucou maman, c'est encore moi et mon histoire de dentiste haha ! Promis dès que le rendez-vous est pris je te laisse tranquille...").
 
