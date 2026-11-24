@@ -3,11 +3,11 @@
   "appointment_booked": false,
   "appointment_details": null,
   "scheduled_start_at": "2026-11-21T16:55:42.090293+01:00",
-  "last_email_sent_at": "2026-11-22T20:27:23.466980+01:00",
+  "last_email_sent_at": "2026-11-24T16:41:50.209651+01:00",
   "last_email_received_at": null,
-  "last_sent_message_id": "<179537564066.2438.4835315885781232860@gmail.com>",
+  "last_sent_message_id": "<179553490915.2460.15009148531037383848@gmail.com>",
   "last_seen_imap_uid": "25551",
-  "reminder_count": 3,
+  "reminder_count": 4,
   "conversation_history": [
     {
       "role": "user",
@@ -33,9 +33,16 @@
       "subject": "Re: Climatiseur mobile pour ma chambre cet été",
       "content": "Coucou Maman,\n\nC'est encore moi et ma survie face aux 30°C dans ma chambre haha ! Promis, c'est ma dernière relance et après je te laisse tranquille avec ça.\n\nJe te remets les infos si jamais c'est passé à la trappe dans tes notifications : c'est le climatiseur VALBERG 9000 BTU chez Electro Dépôt à 219,98 € (ils font même le 3x sans frais si ça arrange, soit 3 fois un peu plus de 73 €). Il est dispo en drive 1h à Hénin-Beaumont ou en livraison. \n\nDis-moi juste si tu as besoin d'un coup de main pour valider tout ça ou si c'est bon !\n\nGros bisous,\n\nFlorent",
       "recipient_role": "mother"
+    },
+    {
+      "role": "user",
+      "timestamp": "2026-11-24T16:41:50.209651+01:00",
+      "subject": "Re: Climatiseur mobile pour ma chambre cet été",
+      "content": "Coucou maman,\n\nC'est encore moi et ma survie face aux 30°C dans ma chambre haha ! Promis, dès que c'est commandé je te laisse tranquille avec ça.\n\nJe te remets les infos au cas où tu aies perdu le fil : c'est le climatiseur mobile VALBERG 9000 BTU chez Electro Dépôt à 219,98 € (et bon à savoir, il y a même une option en 3x sans frais si ça arrange). Il est dispo en drive 1h à Hénin-Beaumont ou en livraison. \n\nNe te mets pas la pression, fais ça quand tu as un petit moment. \n\nGros bisous,\n\nFlorent",
+      "recipient_role": "mother"
     }
   ],
   "last_sent_message_ids": {
-    "mother": "<179537564066.2438.4835315885781232860@gmail.com>"
+    "mother": "<179553490915.2460.15009148531037383848@gmail.com>"
   }
 }

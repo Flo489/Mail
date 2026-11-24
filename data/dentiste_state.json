@@ -3,11 +3,11 @@
   "appointment_booked": false,
   "appointment_details": null,
   "scheduled_start_at": "2026-11-21T16:55:54.458867+01:00",
-  "last_email_sent_at": "2026-11-22T20:27:31.676445+01:00",
+  "last_email_sent_at": "2026-11-24T16:42:24.356155+01:00",
   "last_email_received_at": null,
-  "last_sent_message_id": "<179537564974.2441.2639914036080445265@gmail.com>",
+  "last_sent_message_id": "<179553494347.2495.11962312477904675616@gmail.com>",
   "last_seen_imap_uid": "25607",
-  "reminder_count": 1,
+  "reminder_count": 2,
   "conversation_history": [
     {
       "role": "user",
@@ -21,9 +21,16 @@
       "subject": "Re: Rendez-vous dentiste pour Florent",
       "content": "Coucou maman,\n\nJuste un petit mot doux pour savoir si tu as pu regarder pour prendre ton rendez-vous chez le dentiste. \n\nRien d'urgent ni de grave, c'est juste pour faire le point et",
       "recipient_role": "mother"
+    },
+    {
+      "role": "user",
+      "timestamp": "2026-11-24T16:42:24.356155+01:00",
+      "subject": "Re: Rendez-vous dentiste pour Florent",
+      "content": "Coucou Maman,\n\nJe sais que tes journées sont bien remplies ! Juste un petit mémo pour le rendez-vous dentiste (pour un éventuel polissage) quand tu auras deux minutes.\n\nBonne journée, gros bisous !\nFlorent",
+      "recipient_role": "mother"
     }
   ],
   "last_sent_message_ids": {
-    "mother": "<179537564974.2441.2639914036080445265@gmail.com>"
+    "mother": "<179553494347.2495.11962312477904675616@gmail.com>"
   }
 }
