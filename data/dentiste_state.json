@@ -3,11 +3,11 @@
   "appointment_booked": false,
   "appointment_details": null,
   "scheduled_start_at": "2026-11-21T16:55:54.458867+01:00",
-  "last_email_sent_at": "2026-11-24T16:42:24.356155+01:00",
+  "last_email_sent_at": "2026-11-25T20:06:29.199642+01:00",
   "last_email_received_at": null,
-  "last_sent_message_id": "<179553494347.2495.11962312477904675616@gmail.com>",
+  "last_sent_message_id": "<179563358719.2267.12819423137953059680@gmail.com>",
   "last_seen_imap_uid": "25607",
-  "reminder_count": 2,
+  "reminder_count": 3,
   "conversation_history": [
     {
       "role": "user",
@@ -28,9 +28,16 @@
       "subject": "Re: Rendez-vous dentiste pour Florent",
       "content": "Coucou Maman,\n\nJe sais que tes journées sont bien remplies ! Juste un petit mémo pour le rendez-vous dentiste (pour un éventuel polissage) quand tu auras deux minutes.\n\nBonne journée, gros bisous !\nFlorent",
       "recipient_role": "mother"
+    },
+    {
+      "role": "user",
+      "timestamp": "2026-11-25T20:06:29.199642+01:00",
+      "subject": "Re: Rendez-vous dentiste pour Florent",
+      "content": "Coucou maman, c'est encore moi et mon histoire de dentiste haha ! \n\nPromis, dès que le rendez-vous est pris pour moi je te laisse tranquille avec ça. C'est juste pour faire un petit check et polir ces petites traces sur mes incisives, rien d'urgent ni de grave, mais comme ça c'est fait. \n\nPrends ton temps, c'est juste un petit rappel en passant. \n\nGros bisous !\n\nFlorent",
+      "recipient_role": "mother"
     }
   ],
   "last_sent_message_ids": {
-    "mother": "<179553494347.2495.11962312477904675616@gmail.com>"
+    "mother": "<179563358719.2267.12819423137953059680@gmail.com>"
   }
 }
