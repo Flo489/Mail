@@ -1,12 +1,12 @@
 {
-  "status": "ACTIVE",
-  "appointment_booked": false,
-  "appointment_details": null,
+  "status": "COMPLETED",
+  "appointment_booked": true,
+  "appointment_details": "Achat déjà effectué",
   "scheduled_start_at": "2026-11-21T16:55:42.090293+01:00",
   "last_email_sent_at": "2026-11-25T20:06:25.005017+01:00",
-  "last_email_received_at": null,
+  "last_email_received_at": "2026-11-25T20:18:04+01:00",
   "last_sent_message_id": "<179563358284.2264.13701205159024841995@gmail.com>",
-  "last_seen_imap_uid": "25551",
+  "last_seen_imap_uid": "25662",
   "reminder_count": 5,
   "conversation_history": [
     {
@@ -47,6 +47,11 @@
       "subject": "Re: Climatiseur mobile pour ma chambre cet été",
       "content": "Coucou maman,\n\nC'est encore moi et ma survie face aux 30°C dans ma chambre, haha ! \n\nJe sais que tu as pas mal de choses en tête en ce moment, mais je me permets une petite piqûre de rappel pour le climatiseur Valberg chez Electro Dépôt (toujours à 219,98 € et dispo en 3x si ça arrange, ou en drive 1h à Hénin-Beaumont). \n\nPromis, dès que c'est commandé, je te laisse tranquille avec ça et je viendrai te faire un gros bisou pour te remercier ! \n\nPrends bien soin de toi, gros bisous,\n\nFlorent",
       "recipient_role": "mother"
+    },
+    {
+      "role": "mother",
+      "timestamp": "2026-11-25T20:18:04+01:00",
+      "content": "Arrête c'est déjà acheté\r\n\r\nLe mer. 25 nov. 2026, 20:06, Florent <florentsauvage.contact@gmail.com> a\r\nécrit :"
     }
   ],
   "last_sent_message_ids": {
