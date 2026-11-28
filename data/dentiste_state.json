@@ -3,11 +3,11 @@
   "appointment_booked": false,
   "appointment_details": null,
   "scheduled_start_at": "2026-11-21T16:55:54.458867+01:00",
-  "last_email_sent_at": "2026-11-27T13:00:25.558697+01:00",
+  "last_email_sent_at": "2026-11-28T13:13:52.814106+01:00",
   "last_email_received_at": null,
-  "last_sent_message_id": "<179578082439.2291.17389502897762750064@gmail.com>",
+  "last_sent_message_id": "<179586803158.2265.9382207149931415604@gmail.com>",
   "last_seen_imap_uid": "25607",
-  "reminder_count": 4,
+  "reminder_count": 5,
   "conversation_history": [
     {
       "role": "user",
@@ -42,9 +42,16 @@
       "subject": "Re: Rendez-vous dentiste pour Florent",
       "content": "Coucou maman ! \n\nC'est encore ton fiston préféré et son feuilleton dentaire, haha ! Promis, après ce message, je ne t'embête plus avec ça. \n\nJ'espère que tu vas bien et que ta semaine se passe au top. Je me permets juste une petite piqûre de rappel pour mon fameux rendez-vous de contrôle (pour mes petites traces sur les incisives). C'est vraiment sans urgence et purement esthétique, mais si tu as deux minutes pour m'aider à caler ça quand tu as un moment, tu seras un amour.\n\nPasse une belle journée, gros bisous !\n\nFlorent",
       "recipient_role": "mother"
+    },
+    {
+      "role": "user",
+      "timestamp": "2026-11-28T13:13:52.814106+01:00",
+      "subject": "Re: Rendez-vous dentiste pour Florent",
+      "content": "Coucou maman, \n\nC'est encore ton fils préféré et son interminable saga du dentiste haha ! Promis, dès que j'ai mon petit créneau pour mes incisives, je ne t'embête plus avec ça. \n\nPrends ton temps surtout, c'était juste un petit rappel en passant pour ne pas que ça sorte complètement de ta tête. \n\nGros bisous,\n\nFlorent",
+      "recipient_role": "mother"
     }
   ],
   "last_sent_message_ids": {
-    "mother": "<179578082439.2291.17389502897762750064@gmail.com>"
+    "mother": "<179586803158.2265.9382207149931415604@gmail.com>"
   }
 }
